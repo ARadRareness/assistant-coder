@@ -32,6 +32,8 @@ class AssistantCoder(Frame):
         self.model_manager = model_manager
         self.conversation = ModelConversation(single_message_mode=True)
 
+        self.add_system_message(self.model_manager, self.conversation)
+
         self.pack()
 
         main_frame = Frame(parent)
@@ -126,6 +128,13 @@ class AssistantCoder(Frame):
 
             # Populate the tree with its contents
             self.populate_tree(node)
+
+    def add_system_message(self, model_manager, conversation):
+        model_path = model_manager.models[0].model_path
+        print(model_path)
+        prompt = f"You are AC, the helpful AI coding assistant. You are currently running through the following model: {model_path}."
+        conversation.add_system_message(prompt)
+        print(prompt)
 
 
 if __name__ == "__main__":

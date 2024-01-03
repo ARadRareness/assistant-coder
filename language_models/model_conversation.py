@@ -12,7 +12,19 @@ class ModelConversation:
             return []
 
         if self.single_message_mode:
-            return [self.messages[-1]]
+            messages = []
+            system_message = None
+            for message in self.messages:
+                if message.is_system_message():
+                    system_message = message
+
+            if system_message:
+                messages.append(system_message)
+
+            if len(self.messages) > 0:
+                messages.append(self.messages[-1])
+
+            return messages
 
         return self.messages
 

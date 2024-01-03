@@ -4,6 +4,7 @@ import subprocess
 from language_models.api.llamacpp import LlamaCppModel
 from language_models.formatters.mistral import MistralFormatter
 from language_models.formatters.base import PromptFormatter
+from language_models.formatters.neural_chat import NeuralChatFormatter
 
 
 class ModelManager:
@@ -43,14 +44,18 @@ class ModelManager:
 
         prompt_formatter = self.get_prompt_formatter(self.model_paths[0])
         self.models.append(
-            LlamaCppModel("127.0.0.1", str(self.start_port), prompt_formatter)
+            LlamaCppModel(
+                "127.0.0.1", str(self.start_port), prompt_formatter, self.model_paths[0]
+            )
         )
 
         # TODO: Add check whether the process was started successfully or not
 
     def get_prompt_formatter(self, model_path: str):
-        if "mistral" in model_path:
+        if "mistral" in model_path or "mixtral" in model_path:
             return MistralFormatter()
+        elif "neural" in model_path:
+            return NeuralChatFormatter()
         else:
             return PromptFormatter()
 

@@ -8,13 +8,13 @@ from language_models.model_response import ModelResponse
 
 
 class OobaboogaModel(Model):
-    def __init__(self, host_url, host_port, prompt_formatter):
-        super().__init__(host_url, host_port, prompt_formatter)
+    def __init__(self, host_url, host_port, prompt_formatter, model_path):
+        super().__init__(host_url, host_port, prompt_formatter, model_path)
 
     def generate_text(
         self,
         messages: List[ModelMessage],
-        max_tokens: int = 50,
+        max_tokens: int = 200,
         temperature: float = 0.2,
     ):
         prompt = self.prompt_formatter.generate_prompt(messages)

@@ -6,11 +6,16 @@ from language_models.model_response import ModelResponse
 
 class Model:
     def __init__(
-        self, host_url: str, host_port: str, prompt_formatter: PromptFormatter
+        self,
+        host_url: str,
+        host_port: str,
+        prompt_formatter: PromptFormatter,
+        model_path: str,
     ):
         self.host_url = host_url
         self.host_port = host_port
         self.prompt_formatter = prompt_formatter
+        self.model_path = model_path
 
     def generate_text(
         self,
