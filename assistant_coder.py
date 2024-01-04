@@ -7,8 +7,10 @@ from tkinter import (
     TOP,
     Y,
     Button,
+    Checkbutton,
     Entry,
     Frame,
+    IntVar,
     Label,
     Scrollbar,
     Tk,
@@ -44,6 +46,11 @@ class AssistantCoder(Frame):
 
         # Add a button to open directories
         Button(main_frame, text="Open Directory", command=self.open_directory).pack(
+            side=TOP
+        )
+
+        self.chat_mode = IntVar()
+        Checkbutton(main_frame, text="Chat mode", variable=self.chat_mode).pack(
             side=TOP
         )
 
@@ -112,6 +119,8 @@ class AssistantCoder(Frame):
     def execute_command(self, event):
         command = self.command.get()  # Get the entered command
         self.command.delete(0, "end")
+
+        self.conversation.single_message_mode = self.chat_mode.get() == 0
 
         self.conversation.add_user_message(command)
         response = self.conversation.generate_message(self.model_manager.models[0])
