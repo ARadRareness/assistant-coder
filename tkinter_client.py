@@ -17,24 +17,21 @@ from tkinter import (
     filedialog,
 )
 from tkinter import ttk
-from language_models.model_conversation import ModelConversation
 
-
-from language_models.model_manager import ModelManager
+import client_api
 
 
 class AssistantCoder(Frame):
-    def __init__(self, parent, model_manager):
+    def __init__(self, parent):
         Frame.__init__(self, parent)
 
         parent.title(
             "Assistant Coder"
         )  # This line sets the title of your Tkinter window
 
-        self.model_manager = model_manager
-        self.conversation = ModelConversation(single_message_mode=True)
+        self.conversation_id = client_api.start_conversation()
 
-        self.add_system_message(self.model_manager, self.conversation)
+        self.add_system_message()
 
         self.pack()
 
@@ -120,10 +117,9 @@ class AssistantCoder(Frame):
         command = self.command.get()  # Get the entered command
         self.command.delete(0, "end")
 
-        self.conversation.single_message_mode = self.chat_mode.get() == 0
-
-        self.conversation.add_user_message(command)
-        response = self.conversation.generate_message(self.model_manager.models[0])
+        response = client_api.generate_response(
+            self.conversation_id, command, self.chat_mode.get() == 0
+        )
 
         print(response)
 
@@ -138,36 +134,16 @@ class AssistantCoder(Frame):
             # Populate the tree with its contents
             self.populate_tree(node)
 
-    def add_system_message(self, model_manager, conversation):
-        model_path = model_manager.models[0].model_path
+    def add_system_message(self):
+        model_info = client_api.get_model_info(self.conversation_id)
+        model_path = model_info["path"]
         print(model_path)
+
         prompt = f"You are AC, the helpful AI coding assistant. You are currently running through the following model: {model_path}."
-        conversation.add_system_message(prompt)
+        client_api.add_system_message(self.conversation_id, prompt)
         print(prompt)
 
 
 if __name__ == "__main__":
-    llamacpp_path = os.path.join("bin", "server.exe")
-
-    if not os.path.exists(llamacpp_path):
-        print(
-            "Error:",
-            "Add the llama.cpp server binary and llama.dll into the bin folder. See https://github.com/ggerganov/llama.cpp.",
-        )
-        sys.exit(-1)
-
-    gguf_models = list(filter(lambda f: f.endswith(".gguf"), os.listdir("models")))
-
-    if not gguf_models:
-        print("Error: Add one more gguf models to the models folder.")
-        sys.exit(-1)
-
-    model_manager = ModelManager(
-        llamacpp_path,
-        8000,
-        gguf_models,
-    )
-    model_manager.load_model()
-
     root = Tk()
-    AssistantCoder(root, model_manager).mainloop()
+    AssistantCoder(root).mainloop()

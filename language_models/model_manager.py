@@ -17,6 +17,9 @@ class ModelManager:
         self.context_window = 2048
         self.models = []
 
+    def model_is_loaded(self):
+        return self.popen
+
     def load_model(self):
         if self.popen:
             # Terminate the existing process
@@ -39,6 +42,7 @@ class ModelManager:
                 os.path.join("models", self.model_paths[0]),
             ],
         )
+
         #    stdout=subprocess.DEVNULL,
         #   stderr=subprocess.DEVNULL)
 

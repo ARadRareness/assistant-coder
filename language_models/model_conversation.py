@@ -7,11 +7,11 @@ class ModelConversation:
         self.messages = []
         self.single_message_mode = single_message_mode
 
-    def get_messages(self):
+    def get_messages(self, single_message_mode=False):
         if not self.messages:
             return []
 
-        if self.single_message_mode:
+        if single_message_mode:
             messages = []
             system_message = None
             for message in self.messages:
@@ -21,7 +21,7 @@ class ModelConversation:
             if system_message:
                 messages.append(system_message)
 
-            if len(self.messages) > 0:
+            if len(self.messages) > 0 and not system_message == self.messages[-1]:
                 messages.append(self.messages[-1])
 
             return messages
@@ -34,8 +34,8 @@ class ModelConversation:
     def add_system_message(self, content: str):
         self.messages.append(ModelMessage(Role.SYSTEM, content))
 
-    def generate_message(self, model: Model):
-        messages = self.get_messages()
+    def generate_message(self, model: Model, single_message_mode: bool):
+        messages = self.get_messages(single_message_mode)
 
         response = model.generate_text(messages)
         self.messages.append(ModelMessage(Role.ASSISTANT, response.get_text()))
