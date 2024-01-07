@@ -9,11 +9,25 @@ class DeepseekCoderFormatter(PromptFormatter):
         self.model_type = "DEEPSEEK_CODER"
 
     def generate_prompt(self, messages: List[ModelMessage]):
-        prompt = ""
-
         system_message = ""
 
-        for message in messages:
-            pass  # TODO: Implement me
+        instruction_messages = []
 
-        return prompt
+        for message in messages:
+            if message.is_system_message():
+                system_message = message.get_content()
+            else:
+                instruction_messages.append(message)
+
+        instruction = ""
+
+        if len(instruction_messages) == 1:
+            instruction = instruction_messages[0].get_content()
+        else:
+            for message in instruction_messages:
+                if message.is_user_message():
+                    instruction += f"\n### USER:\n{message.get_content()}"
+                else:
+                    instruction += f"\n### ASSISTANT:\n{message.get_content()}"
+
+        return f"{system_message}\n### Instruction:\n{instruction}\n### Response:"

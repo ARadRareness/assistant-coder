@@ -2,6 +2,7 @@ import os
 import subprocess
 
 from language_models.api.llamacpp import LlamaCppModel
+from language_models.formatters.deepseek_coder import DeepseekCoderFormatter
 from language_models.formatters.mistral import MistralFormatter
 from language_models.formatters.base import PromptFormatter
 from language_models.formatters.neural_chat import NeuralChatFormatter
@@ -56,10 +57,13 @@ class ModelManager:
         # TODO: Add check whether the process was started successfully or not
 
     def get_prompt_formatter(self, model_path: str):
+        # TODO: Read model type through metadata rather than name
         if "mistral" in model_path or "mixtral" in model_path:
             return MistralFormatter()
         elif "neural" in model_path:
             return NeuralChatFormatter()
+        elif "deepseek" in model_path:
+            return DeepseekCoderFormatter()
         else:
             return PromptFormatter()
 
