@@ -34,10 +34,12 @@ class ModelConversation:
     def add_system_message(self, content: str):
         self.messages.append(ModelMessage(Role.SYSTEM, content))
 
-    def generate_message(self, model: Model, single_message_mode: bool):
+    def generate_message(
+        self, model: Model, max_tokens: int, single_message_mode: bool
+    ):
         messages = self.get_messages(single_message_mode)
 
-        response = model.generate_text(messages)
+        response = model.generate_text(messages, max_tokens)
         self.messages.append(ModelMessage(Role.ASSISTANT, response.get_text()))
 
         return response.get_text()

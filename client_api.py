@@ -6,6 +6,30 @@ BASE_URL = (
 )
 
 
+class Model:
+    def __init__(self, single_message_mode: True):
+        self.conversation_id = start_conversation()
+        self.single_message_mode = single_message_mode
+
+    def add_system_message(self, message: str):
+        return add_system_message(self.conversation_id, message)
+
+    def get_conversation(self):
+        return get_conversation(self.conversation_id)
+
+    def get_model_info(self):
+        return get_model_info(self.conversation_id)
+
+    def generate_response(self, message: str, max_tokens=200, temperature=0.2):
+        return generate_response(
+            self.conversation_id,
+            message,
+            max_tokens,
+            temperature,
+            self.single_message_mode,
+        )
+
+
 def start_conversation():
     response = requests.get(f"{BASE_URL}/start_new_conversation")
     if response.status_code == 200:
@@ -63,11 +87,17 @@ def get_model_info(conversation_id: str):
 
 
 def generate_response(
-    conversation_id: str, user_message: str, single_message_mode: bool = False
+    conversation_id: str,
+    user_message: str,
+    max_tokens: int = 200,
+    temperature: float = 0.2,
+    single_message_mode: bool = False,
 ):
     payload = {
         "conversation_id": conversation_id,
         "message": user_message,
+        "max_tokens": max_tokens,
+        "temperature": temperature,
         "single_message_mode": single_message_mode == True,
     }
 

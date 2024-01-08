@@ -20,7 +20,7 @@ class Model:
     def generate_text(
         self,
         messages: List[ModelMessage],
-        max_tokens: int = 50,
+        max_tokens: int = 200,
         temperature: float = 0.2,
     ):
         return ModelResponse("TEXT", "MODEL_NAME")

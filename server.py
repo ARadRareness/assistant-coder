@@ -91,6 +91,7 @@ def generate_response():
         data = request.get_json()
         conversation_id = data.get("conversation_id")
         user_message = data.get("message")
+        max_tokens = data.get("max_tokens")
         single_message_mode = data.get("single_message_mode")
 
         if not conversation_id or not user_message:
@@ -127,7 +128,7 @@ def get_model_manager(mock_llama=False):
         gguf_models = list(filter(lambda f: f.endswith(".gguf"), os.listdir("models")))
 
         if not gguf_models:
-            print("Error: Add one more gguf models to the models folder.")
+            print("Error: Add one or more gguf models to the models folder.")
             sys.exit(-1)
 
         model_manager = ModelManager(
