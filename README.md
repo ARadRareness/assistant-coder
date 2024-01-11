@@ -32,7 +32,7 @@ pip install -r requirements.txt
 
 ## Running
 
-Make sure you first download a gguf-model and put it in the models folder. You will also need put a llama.cpp-server binary in the bin folder. After that run the server using one of the following commands:
+Make sure you first download a gguf-model and put it in the models folder. You will also need to put a llama.cpp-server binary in the bin folder. After that run the server using one of the following commands:
 
 ```bash
 python server.py

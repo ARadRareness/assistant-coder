@@ -1,2 +1,4 @@
 flask
 gradio
+PyQt6
+PySide6

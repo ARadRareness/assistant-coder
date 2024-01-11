@@ -20,6 +20,8 @@ from tkinter import ttk
 
 import client_api
 
+# Deprecated: Will remove before long, use desktop_client.py instead.
+
 
 class AssistantCoder(Frame):
     def __init__(self, parent):
@@ -118,7 +120,7 @@ class AssistantCoder(Frame):
         self.command.delete(0, "end")
 
         response = client_api.generate_response(
-            self.conversation_id, command, self.chat_mode.get() == 0
+            self.conversation_id, command, single_message_mode=self.chat_mode.get() == 0
         )
 
         print(response)
