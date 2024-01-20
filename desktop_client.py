@@ -222,7 +222,7 @@ class AssistantCoder(QMainWindow):
         self.tree_view.setSortingEnabled(True)
         self.tree_view.sortByColumn(0, Qt.SortOrder.AscendingOrder)
 
-        self.tree_view.setColumnWidth(0, 200)
+        self.tree_view.setColumnWidth(0, 210)
 
         self.model.checkStateChanged.connect(self.tree_state_changed)
 
@@ -320,6 +320,7 @@ class AssistantCoder(QMainWindow):
             command,
             selected_files=selected_files,
             single_message_mode=not self.chat_mode.isChecked(),
+            max_tokens=1000,
         )
 
         if response:

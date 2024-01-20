@@ -14,14 +14,16 @@ class MistralFormatter(PromptFormatter):
         system_message = ""
 
         for message in messages:
-            if message.is_user_message():
+            if message.is_user_message() or message.is_reflection_message():
                 if system_message:
-                    prompt += f"[INST] #SYSTEM MESSAGE: {system_message}\n{message.get_full_message()} [/INST]"
+                    prompt += f"[INST] #SYSTEM MESSAGE: {system_message}\n{message.get_message()} [/INST]"
                 else:
-                    prompt += f"[INST] {message.get_full_message()} [/INST]"
+                    prompt += f"[INST] {message.get_message()} [/INST]"
             elif message.is_assistant_message():
-                prompt += f"{message.get_content()}</s> "
+                prompt += f"{message.get_message()}</s> "
             elif message.is_system_message():
-                system_message = message.get_content()
+                system_message = message.get_message()
+            elif message.is_reflection_message():
+                system_message = message.get_message()
 
         return prompt

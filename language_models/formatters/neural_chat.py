@@ -13,11 +13,13 @@ class NeuralChatFormatter(PromptFormatter):
 
         for message in messages:
             if message.is_user_message():
-                prompt += f"### User:\n{message.get_full_message()}\n"
+                prompt += f"### User:\n{message.get_message()}\n"
+            elif message.is_reflection_message():
+                prompt += f"### Reflection:\n{message.get_message()}\n"
             elif message.is_assistant_message():
-                prompt += f"### Assistant:\n{message.get_content()}\n"
+                prompt += f"### Assistant:\n{message.get_message()}\n"
             elif message.is_system_message():
-                prompt += f"### System:\n{message.get_content()}\n"
+                prompt += f"### System:\n{message.get_message()}\n"
 
         prompt += f"### Assistant:"
 

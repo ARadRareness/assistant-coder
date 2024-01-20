@@ -5,6 +5,7 @@ class Role(Enum):
     SYSTEM = 1
     USER = 2
     ASSISTANT = 3
+    REFLECTION = 4
 
 
 class MessageMetadata:
@@ -29,8 +30,11 @@ class ModelMessage:
     def get_content(self):
         return self.content
 
-    def get_full_message(self):
-        return f"{self.get_metadata_info()}{self.get_content()}"
+    def get_message(self):
+        if self.is_user_message():
+            return f"{self.get_metadata_info()}{self.get_content()}"
+        else:
+            return self.get_content()
 
     def get_metadata_info(self):
         info = ""
@@ -64,3 +68,6 @@ class ModelMessage:
 
     def is_assistant_message(self):
         return self.role == Role.ASSISTANT
+
+    def is_reflection_message(self):
+        return self.role == Role.REFLECTION

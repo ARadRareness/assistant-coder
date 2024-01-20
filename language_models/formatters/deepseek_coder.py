@@ -15,19 +15,21 @@ class DeepseekCoderFormatter(PromptFormatter):
 
         for message in messages:
             if message.is_system_message():
-                system_message = message.get_content()
+                system_message = message.get_message()
             else:
                 instruction_messages.append(message)
 
         instruction = ""
 
         if len(instruction_messages) == 1:
-            instruction = instruction_messages[0].get_full_message()
+            instruction = instruction_messages[0].get_message()
         else:
             for message in instruction_messages:
                 if message.is_user_message():
-                    instruction += f"\n### USER:\n{message.get_full_message()}"
+                    instruction += f"\n### USER:\n{message.get_message()}"
+                elif message.is_reflection_message():
+                    instruction += f"\n### REFLECTION:\n{message.get_message()}"
                 else:
-                    instruction += f"\n### ASSISTANT:\n{message.get_content()}"
+                    instruction += f"\n### ASSISTANT:\n{message.get_message()}"
 
         return f"{system_message}\n### Instruction:\n{instruction}\n### Response:"
