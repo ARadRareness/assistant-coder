@@ -222,6 +222,8 @@ class AssistantCoder(QMainWindow):
         self.tree_view.setSortingEnabled(True)
         self.tree_view.sortByColumn(0, Qt.SortOrder.AscendingOrder)
 
+        self.tree_view.setColumnWidth(0, 200)
+
         self.model.checkStateChanged.connect(self.tree_state_changed)
 
         layout.addWidget(self.tree_view)
