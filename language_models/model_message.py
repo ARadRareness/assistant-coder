@@ -26,12 +26,13 @@ class ModelMessage:
         self.content = content
         self.metadata = metadata
         self.actor_name = actor_name
+        self.use_metadata = True
 
     def get_content(self):
         return self.content
 
     def get_message(self):
-        if self.is_user_message():
+        if self.is_user_message() and self.use_metadata:
             return f"{self.get_metadata_info()}{self.get_content()}"
         else:
             return self.get_content()

@@ -6,7 +6,7 @@ from language_models.model_message import MessageMetadata, ModelMessage, Role
 
 
 class ModelConversation:
-    def __init__(self, single_message_mode=False, reflection_mode=True):
+    def __init__(self, single_message_mode=False, reflection_mode=False):
         self.messages = []
         self.single_message_mode = single_message_mode
         self.reflection_mode = reflection_mode
@@ -37,9 +37,8 @@ class ModelConversation:
 
     def add_system_message(self, content: str, metadata: MessageMetadata):
         full_content = (
-            content
-            + "\nEach user message contains some metadata, a timestamp and optionally a list of checked files,"
-            + " you should only write it out when the request of the user requires it."
+            "Each user message contains some metadata, a timestamp and optionally a list of checked files.\n"
+            + content,
         )
         self.messages.append(ModelMessage(Role.SYSTEM, full_content, metadata))
 
