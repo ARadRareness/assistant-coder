@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QTextEdit,
     QHBoxLayout,
+    QSizePolicy,
 )
 from PySide6.QtGui import QTextCursor, QColor, QTextCharFormat
 
@@ -121,6 +122,21 @@ class CustomFileSystemModel(QFileSystemModel):
         return super().setData(index, value, role)
 
 
+class CommandTextEdit(QTextEdit):
+    def __init__(self, parent=None, command_execution=None):
+        super().__init__(parent)
+        self.command_execution = command_execution
+        self.setMaximumHeight(self.document().size().height() * 3)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Return and not event.modifiers() == Qt.ShiftModifier:
+            # Enter without Shift pressed, execute the command
+            self.command_execution()
+        else:
+            super().keyPressEvent(event)
+
+
 class AssistantCoder(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -224,8 +240,8 @@ class AssistantCoder(QMainWindow):
         command_label = QLabel("Command:", self)
         layout.addWidget(command_label)
 
-        self.command = QLineEdit(self)
-        self.command.returnPressed.connect(self.execute_command)
+        self.command = CommandTextEdit(command_execution=self.execute_command)
+        # self.command.returnPressed.connect(self.execute_command)
         layout.addWidget(self.command)
 
     def display_message(self, message, color=None):
@@ -290,7 +306,7 @@ class AssistantCoder(QMainWindow):
         self.command.setFocus()
 
     def execute_command(self):
-        command = self.command.text().strip()
+        command = self.command.toPlainText().strip()
         self.command.clear()
 
         self.display_message("User: " + command, color="darkblue")

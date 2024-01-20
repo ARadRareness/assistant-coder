@@ -36,7 +36,7 @@ class ModelMessage:
         info = ""
 
         if self.metadata.timestamp:
-            info += f"The current time is {self.metadata.timestamp:%d %b %Y %H:%M}, which is a {self.metadata.timestamp:%A}."
+            info += f"The current time is {self.metadata.timestamp:%d %b %Y %H:%M}, {self.metadata.timestamp:%A}."
 
         if self.metadata.selected_files:
             files = ['"' + file + '"' for file in self.metadata.selected_files]
