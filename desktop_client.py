@@ -11,7 +11,10 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QFileSystemModel,
     QFileDialog,
+    QTextEdit,
+    QHBoxLayout,
 )
+from PySide6.QtGui import QTextCursor, QColor, QTextCharFormat
 
 from PySide6.QtCore import QDir, Qt, Signal
 
@@ -123,26 +126,63 @@ class AssistantCoder(QMainWindow):
 
         self.conversation_id = client_api.start_conversation()
 
+        dark_mode = False
+
+        self.background_color = QColor("#ffffff")
+        self.text_color = QColor("#00000")
+        self.button_color = QColor("#ffffff")
+
+        if dark_mode:
+            # Dark mode colors
+            self.background_color = QColor("#1e1e1e")
+            self.text_color = QColor("#ffffff")
+            self.button_color = QColor("#404040")
+
         self.add_system_message()
 
         self.init_ui()
 
     def init_ui(self):
         central_widget = QFrame()
+        # central_widget.setStyleSheet(
+        #    f"background-color: {self.background_color.name()}; color: {self.text_color.name()};"
+        # )
         self.setCentralWidget(central_widget)
 
-        self.layout = QVBoxLayout(central_widget)
+        self.layout = QHBoxLayout(central_widget)
 
-        self.init_treeview(self.layout)
-        self.init_command_entry(self.layout)
+        tree_layout = QVBoxLayout()
+
+        self.init_treeview(tree_layout)
+        self.layout.addLayout(tree_layout)
 
         # Add a button to open directories
         open_dir_button = QPushButton("Open Directory", self)
+        # open_dir_button.setStyleSheet(
+        #    f"background-color: {self.button_color.name()}; color: {self.text_color.name()};"
+        # )
+
         open_dir_button.clicked.connect(self.open_directory)
-        self.layout.addWidget(open_dir_button)
+        tree_layout.addWidget(open_dir_button)
 
         self.chat_mode = QCheckBox("Chat mode", self)
-        self.layout.addWidget(self.chat_mode)
+        self.chat_mode.setStyleSheet(f"color: {self.text_color.name()};")
+        tree_layout.addWidget(self.chat_mode)
+
+        # Add the chat interface to the right
+        chat_layout = QVBoxLayout()
+
+        self.chat_display = QTextEdit()
+        self.chat_display.setStyleSheet("background-color: #f7e9ef;")
+        # self.chat_display.setStyleSheet(
+        #    f"background-color: {self.background_color.name()}; color: {self.text_color.name()};"
+        # )
+
+        self.chat_display.setReadOnly(True)
+        chat_layout.addWidget(self.chat_display)
+        self.init_command_entry(chat_layout)
+
+        self.layout.addLayout(chat_layout)
 
     def init_treeview(self, layout):
         self.model = CustomFileSystemModel()
@@ -173,6 +213,31 @@ class AssistantCoder(QMainWindow):
         self.command.returnPressed.connect(self.execute_command)
         layout.addWidget(self.command)
 
+    def display_message(self, message, color=None):
+        # Scroll to the bottom to always show the latest messages
+        cursor = self.chat_display.textCursor()
+
+        # Create a new text block for the message
+        cursor.insertBlock()
+
+        # Apply color if provided to the new block
+        if color:
+            format = QTextCharFormat()
+            format.setForeground(QColor(color))
+            cursor.setCharFormat(format)
+
+        # Insert the message text to the new block
+        cursor.insertText(message)
+
+        cursor.insertBlock()  # Optional added spacing between messages
+        if color:
+            format = QTextCharFormat()
+            format.setForeground(QColor("black"))
+            cursor.setCharFormat(format)
+
+        self.chat_display.setTextCursor(cursor)
+        cursor.movePosition(QTextCursor.End)
+
     def populate_tree(self, directory, parent_index):
         model = self.centralWidget().layout().itemAt(0).widget().model()
         item_index = model.index(directory)
@@ -199,8 +264,10 @@ class AssistantCoder(QMainWindow):
         print("File clicked:", file_path)
 
     def execute_command(self):
-        command = self.command.text()
+        command = self.command.text().strip()
         self.command.clear()
+
+        self.display_message("User: " + command, color="darkblue")
 
         response = client_api.generate_response(
             self.conversation_id,
@@ -208,6 +275,7 @@ class AssistantCoder(QMainWindow):
             single_message_mode=not self.chat_mode.isChecked(),
         )
 
+        self.display_message("AC: " + response, color="darkred")
         print(response)
 
     def open_directory(self):

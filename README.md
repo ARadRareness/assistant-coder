@@ -5,7 +5,7 @@ A system and architecture for generating coding solutions using large language m
 ## Features
 * Flask server that handles multiple conversations.
 * Simple gradio client for basic chatbot use.
-* Tkinter client (skeleton at the moment) for more advanced coding purposes.
+* PyQt6 client for more advanced coding purposes.
 
 ## How to install
 
