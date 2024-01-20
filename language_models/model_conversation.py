@@ -1,5 +1,8 @@
+import datetime
+from typing import List
+
 from language_models.api.base import Model
-from language_models.model_message import ModelMessage, Role
+from language_models.model_message import MessageMetadata, ModelMessage, Role
 
 
 class ModelConversation:
@@ -28,11 +31,16 @@ class ModelConversation:
 
         return self.messages
 
-    def add_user_message(self, content: str):
-        self.messages.append(ModelMessage(Role.USER, content))
+    def add_user_message(self, content: str, metadata: MessageMetadata):
+        self.messages.append(ModelMessage(Role.USER, content, metadata))
 
-    def add_system_message(self, content: str):
-        self.messages.append(ModelMessage(Role.SYSTEM, content))
+    def add_system_message(self, content: str, metadata: MessageMetadata):
+        full_content = (
+            content
+            + "\nEach user message contains some metadata, a timestamp and optionally a list of checked files,"
+            + " you should only reference it when the request of the user requires it."
+        )
+        self.messages.append(ModelMessage(Role.SYSTEM, full_content, metadata))
 
     def generate_message(
         self, model: Model, max_tokens: int, single_message_mode: bool
@@ -40,6 +48,15 @@ class ModelConversation:
         messages = self.get_messages(single_message_mode)
 
         response = model.generate_text(messages, max_tokens)
-        self.messages.append(ModelMessage(Role.ASSISTANT, response.get_text()))
+
+        metadata = generate_metadata()
+
+        self.messages.append(
+            ModelMessage(Role.ASSISTANT, response.get_text(), metadata)
+        )
 
         return response.get_text()
+
+
+def generate_metadata():
+    return MessageMetadata(datetime.datetime.now(), [])

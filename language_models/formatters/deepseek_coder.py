@@ -22,11 +22,11 @@ class DeepseekCoderFormatter(PromptFormatter):
         instruction = ""
 
         if len(instruction_messages) == 1:
-            instruction = instruction_messages[0].get_content()
+            instruction = instruction_messages[0].get_full_message()
         else:
             for message in instruction_messages:
                 if message.is_user_message():
-                    instruction += f"\n### USER:\n{message.get_content()}"
+                    instruction += f"\n### USER:\n{message.get_full_message()}"
                 else:
                     instruction += f"\n### ASSISTANT:\n{message.get_content()}"
 

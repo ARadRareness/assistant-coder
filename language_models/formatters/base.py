@@ -11,6 +11,6 @@ class PromptFormatter:
         prompt = ""
 
         for message in messages:
-            prompt += f"<|im_start|>{message.get_role()}\n{message.get_content()}<|im_end|>\n"
-        
+            prompt += f"<|im_start|>{message.get_role()}\n{message.get_full_message()}<|im_end|>\n"
+
         return prompt.strip()

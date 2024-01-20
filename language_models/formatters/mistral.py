@@ -16,9 +16,9 @@ class MistralFormatter(PromptFormatter):
         for message in messages:
             if message.is_user_message():
                 if system_message:
-                    prompt += f"[INST] #SYSTEM MESSAGE: {system_message}\n{message.get_content()} [/INST]"
+                    prompt += f"[INST] #SYSTEM MESSAGE: {system_message}\n{message.get_full_message()} [/INST]"
                 else:
-                    prompt += f"[INST] {message.get_content()} [/INST]"
+                    prompt += f"[INST] {message.get_full_message()} [/INST]"
             elif message.is_assistant_message():
                 prompt += f"{message.get_content()}</s> "
             elif message.is_system_message():

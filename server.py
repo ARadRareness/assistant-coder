@@ -1,3 +1,4 @@
+import datetime
 import os
 import sys
 from flask import Flask, jsonify, request
@@ -5,6 +6,7 @@ import uuid
 
 from language_models.model_conversation import ModelConversation
 from language_models.model_manager import ModelManager
+from language_models.model_message import MessageMetadata
 
 app = Flask(__name__)
 
@@ -33,7 +35,12 @@ def add_system_message():
         if conversation_id not in conversations:
             raise ValueError(f"Conversation with id {conversation_id} not found.")
 
-        conversations[conversation_id].add_system_message(message)
+        timestamp = datetime.datetime.now()
+        selected_files = data.get("selected_files")
+
+        metadata = MessageMetadata(timestamp, selected_files)
+
+        conversations[conversation_id].add_system_message(message, metadata)
 
         return jsonify({"result": True})
 
@@ -94,13 +101,18 @@ def generate_response():
         max_tokens = data.get("max_tokens")
         single_message_mode = data.get("single_message_mode")
 
+        timestamp = datetime.datetime.now()
+        selected_files = data.get("selected_files")
+
+        metadata = MessageMetadata(timestamp, selected_files)
+
         if not conversation_id or not user_message:
             raise ValueError("Missing conversation_id or message in the request.")
 
         if conversation_id not in conversations:
             raise ValueError(f"Conversation with id {conversation_id} not found.")
 
-        conversations[conversation_id].add_user_message(user_message)
+        conversations[conversation_id].add_user_message(user_message, metadata)
 
         response = conversations[conversation_id].generate_message(
             model_manager.models[0], max_tokens, single_message_mode

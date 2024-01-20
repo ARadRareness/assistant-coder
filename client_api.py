@@ -1,5 +1,6 @@
+import json
 import requests
-import uuid
+from typing import List
 
 BASE_URL = (
     "http://127.0.0.1:17173"  # Change this URL according to your server configuration
@@ -89,6 +90,7 @@ def get_model_info(conversation_id: str):
 def generate_response(
     conversation_id: str,
     user_message: str,
+    selected_files: List[str] = [],
     max_tokens: int = 200,
     temperature: float = 0.2,
     single_message_mode: bool = False,
@@ -96,6 +98,7 @@ def generate_response(
     payload = {
         "conversation_id": conversation_id,
         "message": user_message,
+        "selected_files": selected_files,
         "max_tokens": max_tokens,
         "temperature": temperature,
         "single_message_mode": single_message_mode == True,
