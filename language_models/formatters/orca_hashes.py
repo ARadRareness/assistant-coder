@@ -3,7 +3,7 @@ from language_models.formatters.base import PromptFormatter
 from language_models.model_message import ModelMessage
 
 
-class NeuralChatFormatter(PromptFormatter):
+class OrcaHashesFormatter(PromptFormatter):
     def __init__(self):
         super().__init__()
         self.model_type = "NEURAL-CHAT"

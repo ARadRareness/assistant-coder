@@ -1,6 +1,4 @@
-import json
 import os
-from datetime import datetime
 
 from PySide6.QtWidgets import (
     QApplication,
@@ -8,7 +6,6 @@ from PySide6.QtWidgets import (
     QFrame,
     QVBoxLayout,
     QTreeView,
-    QLineEdit,
     QLabel,
     QPushButton,
     QCheckBox,
@@ -322,6 +319,18 @@ class AssistantCoder(QMainWindow):
             single_message_mode=not self.chat_mode.isChecked(),
             max_tokens=1000,
         )
+
+        if not response:
+            self.conversation_id = client_api.start_conversation()
+            self.add_system_message()
+
+            response = client_api.generate_response(
+                self.conversation_id,
+                command,
+                selected_files=selected_files,
+                single_message_mode=not self.chat_mode.isChecked(),
+                max_tokens=1000,
+            )
 
         if response:
             self.display_message("AC: " + response, color="darkred")

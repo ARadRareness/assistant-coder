@@ -25,9 +25,9 @@ class Model:
         return generate_response(
             self.conversation_id,
             message,
-            max_tokens,
-            temperature,
-            self.single_message_mode,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            single_message_mode=self.single_message_mode,
         )
 
 

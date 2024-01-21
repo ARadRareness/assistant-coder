@@ -47,7 +47,7 @@ class ToolManager:
         ]
 
     def get_tool_conversation(self, message: ModelMessage):
-        content = "Using the user message and the available tools, reply with what tool and arguments you want to use to solve the problem. Answer in a json-format.\n\n"
+        content = "Using the user message and the available tools, reply with what tool and arguments you want to use to solve the problem. Answer in a json-format, and only with a json response.\n\n"
 
         content += "Available tools:\n"
 
@@ -71,10 +71,23 @@ class ToolManager:
             MessageMetadata(datetime.datetime.now(), ["C:\\test.txt"]),
         )
 
+        example_user_message2 = ModelMessage(
+            Role.USER,
+            "Say something funny!",
+            MessageMetadata(datetime.datetime.now(), ["C:\\test.txt"]),
+        )
+        example_assistant_message2 = ModelMessage(
+            Role.ASSISTANT,
+            '{"tool": "nothing", "arguments": {}}',
+            MessageMetadata(datetime.datetime.now(), ["C:\\test.txt"]),
+        )
+
         messages = [
             tool_system_message,
             example_user_message,
             example_assistant_message,
+            example_user_message2,
+            example_assistant_message2,
             message,
         ]
         return messages
@@ -86,19 +99,37 @@ class ToolManager:
 
         return None
 
+    def handle_json(self, response: str):
+        level_count = 0
+        start_index = -1
+        end_index = -1
+        for i, char in enumerate(response):
+            if char == "{":
+                if start_index == -1:
+                    start_index = i
+                level_count += 1
+            elif char == "}":
+                level_count -= 1
+                if level_count == 0:
+                    end_index = i + 1
+                    break
+
+        return response[start_index:end_index]
+
     def parse_and_execute(self, response: ModelResponse):
-        # try:
-        response_text = response.get_text()
-        command = json.loads(response_text)
+        try:
+            response_text = response.get_text().strip()
+            handled_text = self.handle_json(response_text)
+            command = json.loads(handled_text)
 
-        if not "tool" in command or not "arguments" in command:
-            print(f"MISSING tool or arguments in: {response_text}")
+            if not "tool" in command or not "arguments" in command:
+                print(f"MISSING tool or arguments in: {response_text}")
 
-        func = self.get_function(command)
+            func = self.get_function(command)
 
-        if func:
-            return func(command["arguments"])
+            if func:
+                return func(command["arguments"])
 
-    # except:
-    #    print(f"FAILED TO PARSE: {response_text}")
-    #    return None
+        except:
+            print(f"FAILED TO PARSE: {response_text}")
+            return None

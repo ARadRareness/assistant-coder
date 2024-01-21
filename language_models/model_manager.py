@@ -5,7 +5,7 @@ from language_models.api.llamacpp import LlamaCppModel
 from language_models.formatters.deepseek_coder import DeepseekCoderFormatter
 from language_models.formatters.mistral import MistralFormatter
 from language_models.formatters.base import PromptFormatter
-from language_models.formatters.neural_chat import NeuralChatFormatter
+from language_models.formatters.orca_hashes import OrcaHashesFormatter
 
 
 class ModelManager:
@@ -60,8 +60,8 @@ class ModelManager:
         # TODO: Read model type through metadata rather than name
         if "mistral" in model_path or "mixtral" in model_path:
             return MistralFormatter()
-        elif "neural" in model_path:
-            return NeuralChatFormatter()
+        elif "neural" in model_path or "solar" in model_path:
+            return OrcaHashesFormatter()
         elif "deepseek" in model_path:
             return DeepseekCoderFormatter()
         else:
