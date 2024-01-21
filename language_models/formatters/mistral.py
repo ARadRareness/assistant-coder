@@ -25,5 +25,7 @@ class MistralFormatter(PromptFormatter):
                 system_message = message.get_message()
             elif message.is_reflection_message():
                 system_message = message.get_message()
+            elif message.is_tool_output_message():
+                system_message = message.get_message()
 
         return prompt

@@ -29,6 +29,8 @@ class DeepseekCoderFormatter(PromptFormatter):
                     instruction += f"\n### USER:\n{message.get_message()}"
                 elif message.is_reflection_message():
                     instruction += f"\n### REFLECTION:\n{message.get_message()}"
+                elif message.is_tool_output_message():
+                    instruction += f"\n### TOOL OUTPUT:\n{message.get_message()}"
                 else:
                     instruction += f"\n### ASSISTANT:\n{message.get_message()}"
 

@@ -16,6 +16,8 @@ class NeuralChatFormatter(PromptFormatter):
                 prompt += f"### User:\n{message.get_message()}\n"
             elif message.is_reflection_message():
                 prompt += f"### Reflection:\n{message.get_message()}\n"
+            elif message.is_tool_output_message():
+                prompt += f"### Tool Output:\n{message.get_message()}\n"
             elif message.is_assistant_message():
                 prompt += f"### Assistant:\n{message.get_message()}\n"
             elif message.is_system_message():

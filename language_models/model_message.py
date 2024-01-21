@@ -6,6 +6,7 @@ class Role(Enum):
     USER = 2
     ASSISTANT = 3
     REFLECTION = 4
+    TOOL_OUTPUT = 5
 
 
 class MessageMetadata:
@@ -41,14 +42,11 @@ class ModelMessage:
         info = ""
 
         if self.metadata.timestamp:
-            info += f"The current time is {self.metadata.timestamp:%d %b %Y %H:%M}, {self.metadata.timestamp:%A}."
+            info += f"The current time is {self.metadata.timestamp:%d %b %Y %H:%M}, {self.metadata.timestamp:%A}. "
 
         if self.metadata.selected_files:
             files = ['"' + file + '"' for file in self.metadata.selected_files]
-            info += f"The currently selected files are {', '.join(files)}."
-
-        if info:
-            info = f"({info}) "
+            info += f"The currently selected files are {', '.join(files)}. "
 
         return info
 
@@ -72,3 +70,6 @@ class ModelMessage:
 
     def is_reflection_message(self):
         return self.role == Role.REFLECTION
+
+    def is_tool_output_message(self):
+        return self.role == Role.TOOL_OUTPUT
