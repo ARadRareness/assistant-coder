@@ -38,3 +38,10 @@ Make sure you first download a gguf-model and put it in the models folder. You w
 python server.py
 python3 server.py
 ```
+
+## Tests
+
+You can run the unit tests using the following command:
+```
+python -m unittest discover
+```

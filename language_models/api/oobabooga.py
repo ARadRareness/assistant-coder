@@ -16,8 +16,9 @@ class OobaboogaModel(Model):
         messages: List[ModelMessage],
         max_tokens: int = 200,
         temperature: float = 0.2,
+        use_metadata: bool = False,
     ):
-        prompt = self.prompt_formatter.generate_prompt(messages)
+        prompt = self.prompt_formatter.generate_prompt(messages, use_metadata: bool = False)
 
         request = {
             "prompt": prompt,

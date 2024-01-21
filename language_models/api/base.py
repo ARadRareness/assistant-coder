@@ -22,5 +22,6 @@ class Model:
         messages: List[ModelMessage],
         max_tokens: int = 200,
         temperature: float = 0.2,
+        use_metadata: bool = False,
     ):
         return ModelResponse("TEXT", "MODEL_NAME")

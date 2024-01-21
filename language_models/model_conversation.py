@@ -8,11 +8,11 @@ from language_models.tool_manager import ToolManager
 
 class ModelConversation:
     def __init__(
-        self, single_message_mode=False, reflection_mode=False, use_tools=True
+        self, single_message_mode=False, use_reflections=False, use_tools=True
     ):
         self.messages = []
         self.single_message_mode = single_message_mode
-        self.reflection_mode = reflection_mode
+        self.use_reflections = use_reflections
         self.use_tools = use_tools
         self.tool_manager = ToolManager()
 
@@ -48,19 +48,25 @@ class ModelConversation:
         self.messages.append(ModelMessage(Role.SYSTEM, full_content, metadata))
 
     def generate_message(
-        self, model: Model, max_tokens: int, single_message_mode: bool
+        self,
+        model: Model,
+        max_tokens: int,
+        single_message_mode: bool,
+        use_metadata: bool = False,
     ):
         messages = self.get_messages(single_message_mode)
 
         metadata = generate_metadata()
 
-        if self.reflection_mode and messages and messages[-1].is_user_message():
-            self.handle_reflections(model, max_tokens, messages)
+        if self.use_reflections and messages and messages[-1].is_user_message():
+            self.handle_reflections(
+                model, max_tokens, messages, use_metadata=use_metadata
+            )
 
         if self.use_tools and messages:
-            self.handle_tool_use(model, max_tokens, messages)
+            self.handle_tool_use(model, max_tokens, messages, use_metadata=use_metadata)
 
-        response = model.generate_text(messages, max_tokens)
+        response = model.generate_text(messages, max_tokens, use_metadata=use_metadata)
 
         self.messages.append(
             ModelMessage(Role.ASSISTANT, response.get_text(), metadata)
@@ -73,6 +79,7 @@ class ModelConversation:
         model: Model,
         max_tokens: int,
         messages: list[ModelMessage],
+        use_metadata: bool = False,
     ):
         last_message = messages.pop(-1)
 
@@ -85,7 +92,7 @@ class ModelConversation:
             )
         )
 
-        response = model.generate_text(messages, max_tokens)
+        response = model.generate_text(messages, max_tokens, use_metadata)
         messages[-1] = last_message  # Restore the old user message
 
         reflection_message = ModelMessage(
@@ -95,11 +102,17 @@ class ModelConversation:
         self.messages.append(reflection_message)
 
     def handle_tool_use(
-        self, model: Model, max_tokens: int, messages: list[ModelMessage]
+        self,
+        model: Model,
+        max_tokens: int,
+        messages: list[ModelMessage],
+        use_metadata: bool = False,
     ):
         last_message = messages[-1]
         tool_messages = self.tool_manager.get_tool_conversation(last_message)
-        response = model.generate_text(tool_messages, max_tokens)
+        response = model.generate_text(
+            tool_messages, max_tokens=max_tokens, use_metadata=use_metadata
+        )
         output = self.tool_manager.parse_and_execute(response)
 
         if output:
