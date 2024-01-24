@@ -14,8 +14,11 @@ from PySide6.QtWidgets import (
     QTextEdit,
     QHBoxLayout,
     QSizePolicy,
+    QSystemTrayIcon,
+    QMenu,
+    QStyle,
 )
-from PySide6.QtGui import QTextCursor, QColor, QTextCharFormat
+from PySide6.QtGui import QTextCursor, QColor, QTextCharFormat, QAction
 
 from PySide6.QtCore import QDir, Qt, Signal, QSize
 
@@ -135,9 +138,10 @@ class CommandTextEdit(QTextEdit):
 
 
 class AssistantCoder(QMainWindow):
-    def __init__(self):
+    def __init__(self, app):
         super().__init__()
 
+        self.app = app
         self.resize(QSize(840, 480))
 
         self.setWindowTitle("Assistant Coder")
@@ -163,6 +167,8 @@ class AssistantCoder(QMainWindow):
         self.init_ui()
 
     def init_ui(self):
+        self.create_window_and_system_menu()
+
         central_widget = QFrame()
         # central_widget.setStyleSheet(
         #    f"background-color: {self.background_color.name()}; color: {self.text_color.name()};"
@@ -178,11 +184,6 @@ class AssistantCoder(QMainWindow):
 
         options_layout = QHBoxLayout()
         tree_layout.addLayout(options_layout)
-
-        self.chat_mode = QCheckBox("Chat mode", self)
-        self.chat_mode.setChecked(True)  # Set to True by default
-        self.chat_mode.setStyleSheet(f"color: {self.text_color.name()};")
-        options_layout.addWidget(self.chat_mode)
 
         open_dir_button = QPushButton("Open Directory", self)
         # open_dir_button.setStyleSheet(
@@ -205,6 +206,57 @@ class AssistantCoder(QMainWindow):
         self.init_command_entry(chat_layout)
 
         self.layout.addLayout(chat_layout)
+
+    def create_window_and_system_menu(self):
+        # Create the Window menu
+        window_menu = self.menuBar().addMenu("Options")
+        menu_bar_style_sheet = "QMenuBar { background-color: #f0f0f0; }"
+        self.menuBar().setStyleSheet(menu_bar_style_sheet)
+
+        # Create actions for boolean options in the Window menu
+        self.chat_mode_action = QAction("Use chat mode", window_menu, checkable=True)
+        self.use_tools_action = QAction("Use tools", window_menu, checkable=True)
+        self.use_reflections_action = QAction(
+            "Use reflections", window_menu, checkable=True
+        )
+
+        self.chat_mode_action.setChecked(True)
+        self.use_tools_action.setChecked(True)
+        self.use_reflections_action.setChecked(False)
+
+        # Add actions to the Window menu
+        window_menu.addAction(self.chat_mode_action)
+        window_menu.addAction(self.use_tools_action)
+        window_menu.addAction(self.use_reflections_action)
+
+        # Create the system tray icon
+        self.tray_icon = QSystemTrayIcon()
+        self.tray_icon.setIcon(self.app.style().standardIcon(QStyle.SP_DesktopIcon))
+
+        # Create the system tray menu
+        self.menu = QMenu()
+
+        # Add "Options" submenu with boolean options
+        options_menu = QMenu("Options", self.menu)
+
+        # Add actions to the options menu
+        options_menu.addAction(self.chat_mode_action)
+        options_menu.addAction(self.use_tools_action)
+        options_menu.addAction(self.use_reflections_action)
+
+        # Add the options menu to the main menu
+        self.menu.addMenu(options_menu)
+
+        # Add exit action to the main menu
+        exit_action = QAction("Exit", self.menu)
+        exit_action.triggered.connect(self.app.quit)
+        self.menu.addAction(exit_action)
+
+        # Set the menu for the system tray icon
+        self.tray_icon.setContextMenu(self.menu)
+
+        # Show the system tray icon
+        self.tray_icon.show()
 
     def init_treeview(self, layout):
         self.model = CustomFileSystemModel()
@@ -312,11 +364,17 @@ class AssistantCoder(QMainWindow):
 
         selected_files = list(self.checked_files)
 
+        chat_mode = self.chat_mode_action.isChecked()
+        use_tools = self.use_tools_action.isChecked()
+        use_reflections = self.use_reflections_action.isChecked()
+
         response = client_api.generate_response(
             self.conversation_id,
             command,
             selected_files=selected_files,
-            single_message_mode=not self.chat_mode.isChecked(),
+            single_message_mode=not chat_mode,
+            use_tools=use_tools,
+            use_reflections=use_reflections,
             max_tokens=1000,
         )
 
@@ -328,7 +386,9 @@ class AssistantCoder(QMainWindow):
                 self.conversation_id,
                 command,
                 selected_files=selected_files,
-                single_message_mode=not self.chat_mode.isChecked(),
+                single_message_mode=not chat_mode,
+                use_tools=use_tools,
+                use_reflections=use_reflections,
                 max_tokens=1000,
             )
 
@@ -361,6 +421,6 @@ class AssistantCoder(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication([])
-    window = AssistantCoder()
+    window = AssistantCoder(app)
     window.show()
     app.exec()

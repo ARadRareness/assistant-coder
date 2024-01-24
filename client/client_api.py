@@ -8,9 +8,16 @@ BASE_URL = (
 
 
 class Model:
-    def __init__(self, single_message_mode: True):
+    def __init__(
+        self,
+        single_message_mode: bool = True,
+        use_tools: bool = False,
+        use_reflections: bool = False,
+    ):
         self.conversation_id = start_conversation()
         self.single_message_mode = single_message_mode
+        self.use_tools = use_tools
+        self.use_reflections = use_reflections
 
     def add_system_message(self, message: str):
         return add_system_message(self.conversation_id, message)
@@ -28,6 +35,8 @@ class Model:
             max_tokens=max_tokens,
             temperature=temperature,
             single_message_mode=self.single_message_mode,
+            use_tools=self.use_tools,
+            use_reflections=self.use_reflections,
         )
 
 
@@ -94,6 +103,8 @@ def generate_response(
     max_tokens: int = 200,
     temperature: float = 0.2,
     single_message_mode: bool = False,
+    use_tools: bool = False,
+    use_reflections: bool = False,
 ):
     payload = {
         "conversation_id": conversation_id,
@@ -102,6 +113,8 @@ def generate_response(
         "max_tokens": max_tokens,
         "temperature": temperature,
         "single_message_mode": single_message_mode == True,
+        "use_tools": use_tools == True,
+        "use_reflections": use_reflections == True,
     }
 
     response = requests.post(f"{BASE_URL}/generate_response", json=payload)
@@ -120,7 +133,6 @@ def generate_response(
 
 
 if __name__ == "__main__":
-    # Example usage:
     conversation_id = start_conversation()
     if conversation_id:
         model_info = get_model_info(conversation_id)

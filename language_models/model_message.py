@@ -31,7 +31,7 @@ class ModelMessage:
     def get_content(self):
         return self.content
 
-    def get_message(self, use_metadata):
+    def get_message(self, use_metadata=False):
         if self.is_user_message() and use_metadata:
             return f"{self.get_metadata_info()}{self.get_content()}"
         else:

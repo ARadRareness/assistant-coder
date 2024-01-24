@@ -7,13 +7,9 @@ from language_models.tool_manager import ToolManager
 
 
 class ModelConversation:
-    def __init__(
-        self, single_message_mode=False, use_reflections=False, use_tools=True
-    ):
+    def __init__(self, single_message_mode=False):
         self.messages = []
         self.single_message_mode = single_message_mode
-        self.use_reflections = use_reflections
-        self.use_tools = use_tools
         self.tool_manager = ToolManager()
 
     def get_messages(self, single_message_mode=False):
@@ -53,17 +49,19 @@ class ModelConversation:
         max_tokens: int,
         single_message_mode: bool,
         use_metadata: bool = False,
+        use_tools: bool = False,
+        use_reflections: bool = False,
     ):
         messages = self.get_messages(single_message_mode)
 
         metadata = generate_metadata()
 
-        if self.use_reflections and messages and messages[-1].is_user_message():
+        if use_reflections and messages and messages[-1].is_user_message():
             self.handle_reflections(
                 model, max_tokens, messages, use_metadata=use_metadata
             )
 
-        if self.use_tools and messages:
+        if use_tools and messages:
             self.handle_tool_use(model, max_tokens, messages, use_metadata=use_metadata)
 
         response = model.generate_text(messages, max_tokens, use_metadata=use_metadata)
@@ -87,12 +85,12 @@ class ModelConversation:
             ModelMessage(
                 Role.REFLECTION,
                 "Reflect on the user message below, go step by step through your thoughts how to best fulfill the request of the message.\nMESSAGE: "
-                + last_message.get_message(),
+                + last_message.get_message(use_metadata=use_metadata),
                 last_message.get_metadata(),
             )
         )
 
-        response = model.generate_text(messages, max_tokens, use_metadata)
+        response = model.generate_text(messages, max_tokens, use_metadata=use_metadata)
         messages[-1] = last_message  # Restore the old user message
 
         reflection_message = ModelMessage(

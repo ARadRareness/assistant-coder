@@ -10,7 +10,7 @@ from language_models.model_message import MessageMetadata
 
 app = Flask(__name__)
 
-conversations = {}
+conversations: {str: ModelConversation} = {}
 
 model_manager = None
 
@@ -18,7 +18,7 @@ model_manager = None
 @app.route("/start_new_conversation", methods=["GET"])
 def start_conversation():
     conversation_id = str(uuid.uuid4())
-    conversations[conversation_id] = ModelConversation(single_message_mode=True)
+    conversations[conversation_id] = ModelConversation()
     return jsonify({"conversation_id": conversation_id})
 
 
@@ -100,6 +100,8 @@ def generate_response():
         user_message = data.get("message")
         max_tokens = data.get("max_tokens")
         single_message_mode = data.get("single_message_mode")
+        use_tools = data.get("use_tools")
+        use_reflections = data.get("use_reflections")
 
         timestamp = datetime.datetime.now()
         selected_files = data.get("selected_files")
@@ -115,7 +117,12 @@ def generate_response():
         conversations[conversation_id].add_user_message(user_message, metadata)
 
         response = conversations[conversation_id].generate_message(
-            model_manager.models[0], max_tokens, single_message_mode, use_metadata=True
+            model_manager.models[0],
+            max_tokens,
+            single_message_mode,
+            use_metadata=True,
+            use_tools=use_tools,
+            use_reflections=use_reflections,
         )
 
         return jsonify({"result": True, "response": response})

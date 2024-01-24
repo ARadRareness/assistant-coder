@@ -18,7 +18,9 @@ class OobaboogaModel(Model):
         temperature: float = 0.2,
         use_metadata: bool = False,
     ):
-        prompt = self.prompt_formatter.generate_prompt(messages, use_metadata: bool = False)
+        prompt = self.prompt_formatter.generate_prompt(
+            messages, use_metadata=use_metadata
+        )
 
         request = {
             "prompt": prompt,
