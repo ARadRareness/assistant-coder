@@ -9,7 +9,7 @@ class MistralFormatter(PromptFormatter):
         self.model_type = "MISTRAL"
 
     def generate_prompt(self, messages: List[ModelMessage], use_metadata: bool = False):
-        prompt = ""
+        prompt = "<s>"
 
         system_message = ""
 

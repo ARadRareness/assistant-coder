@@ -64,6 +64,35 @@ class TestTools(unittest.TestCase):
                 response, "The response contains the secret code which is 4512"
             )
 
+    def test_tool_read_file_summarization(self):
+        model = Model(single_message_mode=False, use_tools=True, use_reflections=False)
+        add_system_message(model)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_file_path = os.path.join(temp_dir, "temp_file.txt")
+
+            with open(temp_file_path, "w", encoding="utf8") as fp:
+                fp.write(
+                    """Turing was born in Maida Vale, London, while his father, Julius Mathison Turing was on
+                         leave from his position with the Indian Civil Service (ICS) of the British Raj government at
+                         Chatrapur, then in the Madras Presidency and presently in Odisha state, in India.[16][17]
+                         Turing's father was the son of a clergyman, the Rev. John Robert Turing, from a Scottish
+                         family of merchants that had been based in the Netherlands and included a baronet.
+                         Turing's mother, Julius's wife, was Ethel Sara Turing (née Stoney), daughter of
+                         Edward Waller Stoney, chief engineer of the Madras Railways."""
+                )
+
+            response = model.generate_response(
+                "Can you read and summarize this file for me?",
+                selected_files=[temp_file_path],
+            )
+
+            print(response)
+            self.assert_response_is_about(
+                response,
+                "The response is a summary containing information about Turing's father and mother",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

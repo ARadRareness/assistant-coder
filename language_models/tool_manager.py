@@ -20,6 +20,8 @@ def read_file(arguments):
         if os.path.isfile(fpath):
             with open(fpath, "r", encoding="utf8") as f:
                 return f"FILE CONTENT OF {fpath}:\n{f.read()}"
+        else:
+            print("FILE WAS NOT FOUND!")
     else:
         print("READ FILE with UNKNOWN ARGUMENTS")
 
