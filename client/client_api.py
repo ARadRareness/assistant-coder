@@ -28,10 +28,13 @@ class Model:
     def get_model_info(self):
         return get_model_info(self.conversation_id)
 
-    def generate_response(self, message: str, max_tokens=200, temperature=0.2):
+    def generate_response(
+        self, message: str, selected_files=[], max_tokens=200, temperature=0.2
+    ):
         return generate_response(
             self.conversation_id,
             message,
+            selected_files=selected_files,
             max_tokens=max_tokens,
             temperature=temperature,
             single_message_mode=self.single_message_mode,

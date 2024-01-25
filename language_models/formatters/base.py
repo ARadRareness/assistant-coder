@@ -13,4 +13,4 @@ class PromptFormatter:
         for message in messages:
             prompt += f"<|im_start|>{message.get_role()}\n{message.get_message(use_metadata)}<|im_end|>\n"
 
-        return prompt.strip()
+        return prompt.strip() + "<|im_start|>assistant"

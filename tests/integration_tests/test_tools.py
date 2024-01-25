@@ -1,3 +1,5 @@
+import os
+import tempfile
 import unittest
 
 from client.client_api import Model
@@ -41,6 +43,26 @@ class TestTools(unittest.TestCase):
             response,
             "The response contains a greeting or status update",
         )
+
+    def test_tool_read_file(self):
+        model = Model(single_message_mode=False, use_tools=True, use_reflections=False)
+        add_system_message(model)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_file_path = os.path.join(temp_dir, "temp_file.txt")
+
+            with open(temp_file_path, "w") as fp:
+                fp.write("The secret code is 4512.")
+
+            response = model.generate_response(
+                "Read the file, what is the secret code?",
+                selected_files=[temp_file_path],
+            )
+
+            print(response)
+            self.assert_response_is_about(
+                response, "The response contains the secret code which is 4512"
+            )
 
 
 if __name__ == "__main__":

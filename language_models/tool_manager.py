@@ -116,10 +116,38 @@ class ToolManager:
 
         return response[start_index:end_index]
 
+    def add_backslashes(self, response: str):
+        """Not so pretty hack to inject backslashes into string
+        since json.loads requires 4 backslashes to indicate paths
+        and the llm usually only outputs one or two.
+        """
+        new_response = ""
+
+        i = 0
+
+        while i < len(response):
+            c = response[i]
+            if c == "\\":
+                for j in range(3):
+                    new_response += "\\"
+
+                for j in range(1, 4):
+                    if len(response) > j + i and response[j + i] == "\\":
+                        i += 1
+                    else:
+                        break
+
+            new_response += c
+            i += 1
+
+        return new_response
+
     def parse_and_execute(self, response: ModelResponse):
         try:
             response_text = response.get_text().strip()
             handled_text = self.handle_json(response_text)
+            handled_text = self.add_backslashes(handled_text)
+
             command = json.loads(handled_text)
 
             if not "tool" in command or not "arguments" in command:
@@ -130,6 +158,7 @@ class ToolManager:
             if func:
                 return func(command["arguments"])
 
-        except:
+        except Exception as e:
             print(f"FAILED TO PARSE: {response_text}")
+            print(f"Exception message: {str(e)}")
             return None

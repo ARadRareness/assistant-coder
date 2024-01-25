@@ -47,6 +47,8 @@ class ModelMessage:
             files = ['"' + file + '"' for file in self.metadata.selected_files]
             info += f"The currently selected files are {', '.join(files)}. "
 
+        if info:
+            info = f"[Metadata info provided with the message, don't write it out: {info.strip()}] "
         return info
 
     def get_role(self):
