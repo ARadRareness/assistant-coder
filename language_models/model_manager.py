@@ -21,7 +21,7 @@ class ModelManager:
     def model_is_loaded(self):
         return self.popen
 
-    def load_model(self):
+    def load_model(self, model_index=0):
         if self.popen:
             # Terminate the existing process
             self.popen.terminate()
@@ -40,17 +40,20 @@ class ModelManager:
                 "--port",
                 str(self.start_port),
                 "-m",
-                os.path.join("models", self.model_paths[0]),
+                os.path.join("models", self.model_paths[model_index]),
             ],
         )
 
         #    stdout=subprocess.DEVNULL,
         #   stderr=subprocess.DEVNULL)
 
-        prompt_formatter = self.get_prompt_formatter(self.model_paths[0])
+        prompt_formatter = self.get_prompt_formatter(self.model_paths[model_index])
         self.models.append(
             LlamaCppModel(
-                "127.0.0.1", str(self.start_port), prompt_formatter, self.model_paths[0]
+                "127.0.0.1",
+                str(self.start_port),
+                prompt_formatter,
+                self.model_paths[model_index],
             )
         )
 
@@ -66,6 +69,18 @@ class ModelManager:
             return DeepseekCoderFormatter()
         else:
             return PromptFormatter()
+
+    def change_model(self, model_path: str):
+        model_index = self.model_paths.index(model_path)
+
+        if model_index == -1:
+            print(f"Error: Model {model_path} not found.")
+            return
+
+        self.load_model(model_index)
+
+    def get_available_models(self):
+        return self.model_paths
 
     def __del__(self):
         # Terminate the process if it is still running

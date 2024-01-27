@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QVBoxLayout,
+    QComboBox,
 )
 
 from PySide6.QtGui import QTextCursor, QColor, QTextCharFormat, QAction
@@ -152,6 +153,11 @@ class AssistantCoder(QMainWindow):
 
         window_menu.addSeparator()
         options_menu.addSeparator()
+
+        change_model_action = self.add_menu_action(
+            "Change model", window_menu, options_menu
+        )
+        change_model_action.triggered.connect(self.change_model)
 
         download_model_action = self.add_menu_action(
             "Download model", window_menu, options_menu
@@ -334,12 +340,14 @@ class AssistantCoder(QMainWindow):
         print(prompt)
 
     def download_model(self):
-        # Create and display the download model dialog
         dialog = DownloadModelDialog(self)
         if dialog.exec() == QDialog.Accepted:
-            # Dialog was accepted, proceed with the download
-            # print("Downloading model...")
             None
+
+    def change_model(self):
+        dialog = ChangeModelDialog(self)
+        if dialog.exec() == QDialog.Accepted:
+            self.add_system_message()
 
     def download_method(self, repo_id, filename):
         print(f"Downloading model from {repo_id} with name {filename}")
@@ -391,6 +399,42 @@ class DownloadModelDialog(QDialog):
         filename = self.filename_edit.text()
         self.accept()  # Close the dialog
         self.parent().download_method(repo_id, filename)  # Call the download method
+
+
+class ChangeModelDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Change Model")
+
+        self.available_models = client_api.get_available_models()
+
+        # Create a label and a combo box for selecting the model
+
+        self.model_label = QLabel("Model:")
+        self.model_combo_box = QComboBox()
+        self.model_combo_box.addItems(self.available_models)
+
+        # Create buttons for downloading and canceling
+        self.change_button = QPushButton("Change")
+        self.cancel_button = QPushButton("Cancel")
+
+        # Connect button clicks to slots
+        self.change_button.clicked.connect(self.change)
+        self.cancel_button.clicked.connect(self.reject)
+
+        # Layout setup
+        layout = QVBoxLayout()
+        layout.addWidget(self.model_label)
+        layout.addWidget(self.model_combo_box)
+        layout.addWidget(self.change_button)
+        layout.addWidget(self.cancel_button)
+        self.setLayout(layout)
+
+    def change(self):
+        # Retrieve the values from the line edits and trigger the download method
+        model_name = self.model_combo_box.currentText()
+        self.accept()
+        client_api.change_model(model_name)
 
 
 class CustomFileSystemModel(QFileSystemModel):

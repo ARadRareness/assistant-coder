@@ -92,6 +92,34 @@ def get_model_info():
         return jsonify({"result": False, "error_message": str(e)})
 
 
+@app.route("/change_model", methods=["POST"])
+def change_model():
+    try:
+        data = request.get_json()
+        model_name = data.get("model_name")
+        if not model_name:
+            raise ValueError("Missing model_name in the request.")
+        model_manager.change_model(model_name)
+        return jsonify({"result": True})
+    except Exception as e:
+        return jsonify({"result": False, "error_message": str(e)})
+
+
+@app.route("/get_available_models", methods=["GET"])
+def get_available_models():
+    try:
+        if model_manager:
+            return jsonify(
+                {"result": True, "models": model_manager.get_available_models()}
+            )
+        else:
+            return jsonify(
+                {"result": False, "error_message": "No model manager found."}
+            )
+    except Exception as e:
+        return jsonify({"result": False, "error_message": str(e)})
+
+
 @app.route("/generate_response", methods=["POST"])
 def generate_response():
     try:

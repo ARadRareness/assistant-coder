@@ -28,6 +28,12 @@ class Model:
     def get_model_info(self):
         return get_model_info(self.conversation_id)
 
+    def get_available_models(self):
+        return get_available_models()
+
+    def change_model(self, model_name: str):
+        return change_model(model_name)
+
     def generate_response(
         self, message: str, selected_files=[], max_tokens=200, temperature=0.2
     ):
@@ -97,6 +103,34 @@ def get_model_info(conversation_id: str):
     else:
         print(f"Error getting model info: {data}")
         return {}
+
+
+def get_available_models():
+    response = requests.get(f"{BASE_URL}/get_available_models")
+    if response.status_code != 200:
+        print(f"Error getting available models. status_code={response.status_code}")
+        return []
+
+    data = response.json()
+
+    if data["result"]:
+        return data["models"]
+    else:
+        print(f"Error getting available models: {data}")
+        return []
+
+
+def change_model(model_name: str):
+    payload = {"model_name": model_name}
+    response = requests.post(f"{BASE_URL}/change_model", json=payload)
+
+    if response.status_code != 200:
+        print(f"Error changing model. status_code={response.status_code}")
+        return False
+
+    data = response.json()
+
+    return data["result"]
 
 
 def generate_response(
