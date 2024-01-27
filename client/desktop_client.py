@@ -20,9 +20,10 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QTextCursor, QColor, QTextCharFormat, QAction
 
-from PySide6.QtCore import QDir, Qt, Signal, QSize
+from PySide6.QtCore import QObject, QDir, Qt, Signal, QSize
 
 import client_api
+import threading
 
 
 class CustomFileSystemModel(QFileSystemModel):
@@ -137,6 +138,56 @@ class CommandTextEdit(QTextEdit):
             super().keyPressEvent(event)
 
 
+class MessageSender(QObject):
+    message_received = Signal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._parent = parent
+
+    def send_message(self, command):
+        selected_files = list(self._parent.checked_files)
+
+        chat_mode = self._parent.chat_mode_action.isChecked()
+        use_tools = self._parent.use_tools_action.isChecked()
+        use_reflections = self._parent.use_reflections_action.isChecked()
+
+        def generate_response_thread():
+            try:
+                response = client_api.generate_response(
+                    self._parent.conversation_id,
+                    command,
+                    selected_files=selected_files,
+                    single_message_mode=not chat_mode,
+                    use_tools=use_tools,
+                    use_reflections=use_reflections,
+                    max_tokens=1000,
+                )
+
+                if not response:
+                    self._parent.conversation_id = client_api.start_conversation()
+                    self._parent.add_system_message()
+
+                    response = client_api.generate_response(
+                        self._parent.conversation_id,
+                        command,
+                        selected_files=selected_files,
+                        single_message_mode=not chat_mode,
+                        use_tools=use_tools,
+                        use_reflections=use_reflections,
+                        max_tokens=1000,
+                    )
+
+                if response:
+                    self.message_received.emit("AC: " + response)
+                    print(response)
+            except Exception as e:
+                print("Error in generate_response_thread:", e)
+
+        response_thread = threading.Thread(target=generate_response_thread)
+        response_thread.start()
+
+
 class AssistantCoder(QMainWindow):
     def __init__(self, app):
         super().__init__()
@@ -149,6 +200,11 @@ class AssistantCoder(QMainWindow):
         self.conversation_id = client_api.start_conversation()
 
         self.checked_files = set()
+
+        self.message_sender = MessageSender(self)
+        self.message_sender.message_received.connect(
+            lambda message: self.display_message(message, color="darkred")
+        )
 
         dark_mode = False
 
@@ -362,6 +418,9 @@ class AssistantCoder(QMainWindow):
 
         self.display_message("User: " + command, color="darkblue")
 
+        self.message_sender.send_message(command)
+
+    def send_message(self, command):
         selected_files = list(self.checked_files)
 
         chat_mode = self.chat_mode_action.isChecked()
@@ -393,6 +452,7 @@ class AssistantCoder(QMainWindow):
             )
 
         if response:
+            # Update the GUI with the response
             self.display_message("AC: " + response, color="darkred")
             print(response)
 
