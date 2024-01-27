@@ -27,6 +27,10 @@ class ModelManager:
             self.popen.terminate()
             self.models.pop()
 
+        model_path = os.path.join("models", self.model_paths[model_index])
+
+        self.read_prompt_format(model_path)
+
         print(self.llama_cpp_path)
 
         # Start a new child process with the llama cpp path and the model path as arguments
@@ -40,7 +44,7 @@ class ModelManager:
                 "--port",
                 str(self.start_port),
                 "-m",
-                os.path.join("models", self.model_paths[model_index]),
+                model_path,
             ],
         )
 
@@ -58,6 +62,19 @@ class ModelManager:
         )
 
         # TODO: Add check whether the process was started successfully or not
+
+    def read_prompt_format(self, model_path: str):
+        from gguf import GGUFReader
+
+        reader = GGUFReader(model_path, "r+")
+
+        if "tokenizer.chat_template" in reader.fields:
+            jinja_template = "".join(
+                [chr(c) for c in reader.fields["tokenizer.chat_template"].parts[4]]
+            )
+            return jinja_template
+        else:
+            print("No chat template found.")
 
     def get_prompt_formatter(self, model_path: str):
         # TODO: Read model type through metadata rather than name

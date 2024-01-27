@@ -1,4 +1,5 @@
 flask
+gguf
 gradio
 huggingface_hub
 PySide6
