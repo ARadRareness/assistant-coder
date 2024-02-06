@@ -174,15 +174,12 @@ def get_model_manager(mock_llama=False):
 
         gguf_models = list(filter(lambda f: f.endswith(".gguf"), os.listdir("models")))
 
-        if not gguf_models:
-            print("Error: Add one or more gguf models to the models folder.")
-            sys.exit(-1)
+        model_manager = ModelManager(llamacpp_path, 8000)
 
-        model_manager = ModelManager(
-            llamacpp_path,
-            8000,
-            gguf_models,
-        )
+        if len(model_manager.get_available_models()) == 0:
+            if not gguf_models:
+                print("Error: Add one or more gguf models to the models folder.")
+                sys.exit(-1)
 
         return model_manager
 

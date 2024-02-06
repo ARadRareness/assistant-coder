@@ -9,10 +9,9 @@ from language_models.formatters.orca_hashes import OrcaHashesFormatter
 
 
 class ModelManager:
-    def __init__(self, llama_cpp_path, start_port, model_paths):
+    def __init__(self, llama_cpp_path, start_port):
         self.llama_cpp_path = llama_cpp_path
         self.start_port = start_port
-        self.model_paths = model_paths
         self.popen = None
         self.gpu_layers = 9001
         self.context_window = 2048
@@ -27,7 +26,9 @@ class ModelManager:
             self.popen.terminate()
             self.models.pop()
 
-        model_path = os.path.join("models", self.model_paths[model_index])
+        available_models = self.get_available_models()
+
+        model_path = os.path.join("models", available_models[model_index])
 
         self.read_prompt_format(model_path)
 
@@ -51,13 +52,13 @@ class ModelManager:
         #    stdout=subprocess.DEVNULL,
         #   stderr=subprocess.DEVNULL)
 
-        prompt_formatter = self.get_prompt_formatter(self.model_paths[model_index])
+        prompt_formatter = self.get_prompt_formatter(available_models[model_index])
         self.models.append(
             LlamaCppModel(
                 "127.0.0.1",
                 str(self.start_port),
                 prompt_formatter,
-                self.model_paths[model_index],
+                available_models[model_index],
             )
         )
 
@@ -88,7 +89,7 @@ class ModelManager:
             return PromptFormatter()
 
     def change_model(self, model_path: str):
-        model_index = self.model_paths.index(model_path)
+        model_index = self.get_available_models().index(model_path)
 
         if model_index == -1:
             print(f"Error: Model {model_path} not found.")
@@ -97,7 +98,7 @@ class ModelManager:
         self.load_model(model_index)
 
     def get_available_models(self):
-        return self.model_paths
+        return list(filter(lambda f: f.endswith(".gguf"), os.listdir("models")))
 
     def __del__(self):
         # Terminate the process if it is still running
