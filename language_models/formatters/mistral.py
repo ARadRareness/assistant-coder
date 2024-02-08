@@ -3,6 +3,7 @@ from language_models.formatters.base import PromptFormatter
 from language_models.model_message import ModelMessage
 
 
+# This formatter seems to not be able to produce reliable results, probably due to <s> not expected to be an ordinary string token
 class MistralFormatter(PromptFormatter):
     def __init__(self):
         super().__init__()
@@ -16,7 +17,13 @@ class MistralFormatter(PromptFormatter):
         for message in messages:
             if message.is_user_message() or message.is_reflection_message():
                 if system_message:
-                    prompt += f"[INST] #SYSTEM MESSAGE: {system_message}\n{message.get_message(use_metadata)} [/INST]"
+                    prompt += (
+                        f"[INST] This is the system prompt of the message:\n"
+                        f"{system_message}\n"
+                        f"This is the user message:\n"
+                        f"{message.get_message(use_metadata)} [/INST]"
+                    )
+                    system_message = ""
                 else:
                     prompt += f"[INST] {message.get_message(use_metadata)} [/INST]"
             elif message.is_assistant_message():

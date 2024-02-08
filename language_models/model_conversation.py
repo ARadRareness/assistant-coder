@@ -38,8 +38,8 @@ class ModelConversation:
 
     def add_system_message(self, content: str, metadata: MessageMetadata):
         full_content = (
-            "Each user message contains some metadata, a timestamp and optionally a list of checked files.\n"
-            + content,
+            "Each user message contains some metadata, a timestamp and optionally a list of checked files. Unless asked for the information,"
+            " DO NOT answer with the metadata or the timestamp.\n" + content
         )
         self.messages.append(ModelMessage(Role.SYSTEM, full_content, metadata))
 
@@ -56,6 +56,8 @@ class ModelConversation:
 
         metadata = generate_metadata()
 
+        self.write_to_history("HISTORY", model, self.messages, use_metadata)
+
         if use_reflections and messages and messages[-1].is_user_message():
             self.handle_reflections(
                 model, max_tokens, messages, use_metadata=use_metadata
@@ -70,6 +72,8 @@ class ModelConversation:
             ModelMessage(Role.ASSISTANT, response.get_text(), metadata)
         )
 
+        self.write_to_history("RESPONSE", model, self.messages[-1:], use_metadata)
+
         return response.get_text()
 
     def handle_reflections(
@@ -81,23 +85,32 @@ class ModelConversation:
     ):
         last_message = messages.pop(-1)
 
-        messages.append(
-            ModelMessage(
-                Role.REFLECTION,
-                "Reflect on the user message below, go step by step through your thoughts how to best fulfill the request of the message.\nMESSAGE: "
-                + last_message.get_message(use_metadata=use_metadata),
-                last_message.get_metadata(),
-            )
+        reflection_prompt_message = ModelMessage(
+            Role.REFLECTION,
+            "Reflect on the user message below, go step by step through your thoughts how to best fulfill the request of the message.\nMESSAGE: "
+            + last_message.get_message(use_metadata=use_metadata),
+            last_message.get_metadata(),
         )
+
+        messages.append(reflection_prompt_message)
 
         response = model.generate_text(messages, max_tokens, use_metadata=use_metadata)
+
         messages[-1] = last_message  # Restore the old user message
 
-        reflection_message = ModelMessage(
+        reflection_response_message = ModelMessage(
             Role.REFLECTION, response.get_text(), last_message.get_metadata()
         )
-        messages.append(reflection_message)
-        self.messages.append(reflection_message)
+
+        messages.append(reflection_response_message)
+        self.messages.append(reflection_response_message)
+
+        self.write_to_history(
+            "REFLECTION",
+            model,
+            [reflection_prompt_message, reflection_response_message],
+            use_metadata,
+        )
 
     def handle_tool_use(
         self,
@@ -111,12 +124,43 @@ class ModelConversation:
         response = model.generate_text(
             tool_messages, max_tokens=max_tokens, use_metadata=use_metadata
         )
-        output = self.tool_manager.parse_and_execute(response)
+        output, func_to_call = self.tool_manager.parse_and_execute(response)
+
+        func_to_call_message = ModelMessage(
+            Role.TOOL_OUTPUT, func_to_call, last_message.get_metadata()
+        )
 
         if output:
-            messages.append(
-                ModelMessage(Role.TOOL_OUTPUT, output, last_message.get_metadata())
+            output_message = ModelMessage(
+                Role.TOOL_OUTPUT, output, last_message.get_metadata()
             )
+            messages.append(output_message)
+
+            self.write_to_history(
+                "TOOL USE",
+                model,
+                tool_messages + [func_to_call_message, output_message],
+                use_metadata,
+            )
+        else:
+            self.write_to_history(
+                "TOOL USE",
+                model,
+                tool_messages + [func_to_call_message],
+                use_metadata,
+            )
+
+    def write_to_history(
+        self,
+        title: str,
+        model: Model,
+        messages: List[ModelMessage],
+        use_metadata: bool = False,
+    ):
+        with open("history.log", "a") as file:
+            file.write(f"< {title} >\n")
+            file.write(model.prompt_formatter.generate_prompt(messages, use_metadata))
+            file.write("\n\n")
 
 
 def generate_metadata():

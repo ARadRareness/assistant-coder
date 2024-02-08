@@ -158,7 +158,9 @@ class ToolManager:
             func = self.get_function(command)
 
             if func:
-                return func(command["arguments"])
+                return func(command["arguments"]), handled_text
+            else:
+                return None, handled_text
 
         except Exception as e:
             print(f"FAILED TO PARSE: {response_text}")

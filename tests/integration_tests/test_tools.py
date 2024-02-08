@@ -32,7 +32,7 @@ class TestTools(unittest.TestCase):
         )
 
     def test_tool_nothing(self):
-        model = Model(False)
+        model = Model(single_message_mode=False, use_tools=True, use_reflections=False)
         add_system_message(model)
 
         response = model.generate_response("Hi, how are you?")
