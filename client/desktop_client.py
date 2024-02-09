@@ -150,9 +150,14 @@ class AssistantCoder(QMainWindow):
         self.use_reflections_action = self.add_checkable_menu_action(
             "Use reflections", window_menu, options_menu, checked_by_default=False
         )
-
         window_menu.addSeparator()
         options_menu.addSeparator()
+
+        clear_chat_action = self.add_menu_action(
+            "Clear chat", window_menu, options_menu
+        )
+
+        clear_chat_action.triggered.connect(self.clear_chat)
 
         change_model_action = self.add_menu_action(
             "Change model", window_menu, options_menu
@@ -338,6 +343,11 @@ class AssistantCoder(QMainWindow):
         prompt = f"You are AC, the helpful AI coding assistant. You are currently running through the following model: {model_path}."
         client_api.add_system_message(self.conversation_id, prompt)
         print(prompt)
+
+    def clear_chat(self):
+        self.chat_display.clear()
+        self.conversation_id = client_api.start_conversation()
+        self.add_system_message()
 
     def download_model(self):
         dialog = DownloadModelDialog(self)
