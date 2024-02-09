@@ -62,26 +62,28 @@ class ToolManager:
 
         tool_system_message = ModelMessage(Role.SYSTEM, content, message.get_metadata())
 
+        example_path = "C:\\test.txt"
+
         example_user_message = ModelMessage(
             Role.USER,
             "Read the content of the selected file for me please.",
-            MessageMetadata(datetime.datetime.now(), ["C:\\test.txt"]),
+            MessageMetadata(datetime.datetime.now(), [example_path]),
         )
         example_assistant_message = ModelMessage(
             Role.ASSISTANT,
-            '{"tool": "read_file", "arguments": {"FILEPATH": "C:\\test.txt"}}',
-            MessageMetadata(datetime.datetime.now(), ["C:\\test.txt"]),
+            '{"tool": "read_file", "arguments": {"FILEPATH": "%s"}}' % (example_path),
+            MessageMetadata(datetime.datetime.now(), [example_path]),
         )
 
         example_user_message2 = ModelMessage(
             Role.USER,
             "Say something funny!",
-            MessageMetadata(datetime.datetime.now(), ["C:\\test.txt"]),
+            MessageMetadata(datetime.datetime.now(), [example_path]),
         )
         example_assistant_message2 = ModelMessage(
             Role.ASSISTANT,
             '{"tool": "nothing", "arguments": {}}',
-            MessageMetadata(datetime.datetime.now(), ["C:\\test.txt"]),
+            MessageMetadata(datetime.datetime.now(), [example_path]),
         )
 
         messages = [
@@ -95,8 +97,9 @@ class ToolManager:
         return messages
 
     def get_function(self, command):
+        target_tool = command["tool"].replace("\\", "")
         for tool in self.tools:
-            if command["tool"] == tool.name:
+            if target_tool == tool.name:
                 return tool.tool_function
 
         return None
@@ -147,7 +150,7 @@ class ToolManager:
     def parse_and_execute(self, response: ModelResponse):
         try:
             response_text = response.get_text().strip()
-            handled_text = self.handle_json(response_text)
+            handled_text = self.handle_json(response_text).replace("\\_", "_")
             handled_text = self.add_backslashes(handled_text)
 
             command = json.loads(handled_text)
@@ -165,4 +168,4 @@ class ToolManager:
         except Exception as e:
             print(f"FAILED TO PARSE: {response_text}")
             print(f"Exception message: {str(e)}")
-            return None
+            return None, response_text

@@ -9,30 +9,49 @@ class MistralFormatter(PromptFormatter):
         super().__init__()
         self.model_type = "MISTRAL"
 
+        self.BOS = 1
+        self.EOS = 2
+
+    def user_message(self, message, use_metadata, system_message, tool_message):
+        prompt_message = []
+        if system_message:
+            prompt_message.append(system_message)
+        if tool_message:
+            prompt_message.append(tool_message)
+
+        if message:
+            prompt_message.append(message.get_message(use_metadata))
+
+        prompt_message = "\n".join(prompt_message)
+        return f"[INST] {prompt_message} [/INST]"
+
     def generate_prompt(self, messages: List[ModelMessage], use_metadata: bool = False):
-        prompt = "<s>"
+        prompt = [self.BOS]
 
         system_message = ""
+        tool_message = ""
 
         for message in messages:
             if message.is_user_message() or message.is_reflection_message():
-                if system_message:
-                    prompt += (
-                        f"[INST] This is the system prompt of the message:\n"
-                        f"{system_message}\n"
-                        f"This is the user message:\n"
-                        f"{message.get_message(use_metadata)} [/INST]"
+                prompt.append(
+                    self.user_message(
+                        message, use_metadata, system_message, tool_message
                     )
-                    system_message = ""
-                else:
-                    prompt += f"[INST] {message.get_message(use_metadata)} [/INST]"
+                )
+                system_message = ""
+                tool_message = ""
             elif message.is_assistant_message():
-                prompt += f"{message.get_message(use_metadata)}</s> "
+                prompt.append(f"{message.get_message(use_metadata)}")
+                prompt.append(self.EOS)
             elif message.is_system_message():
                 system_message = message.get_message(use_metadata)
             elif message.is_reflection_message():
                 system_message = message.get_message(use_metadata)
             elif message.is_tool_output_message():
-                system_message = message.get_message(use_metadata)
+                tool_message = message.get_message(use_metadata)
 
+        if system_message or tool_message:
+            prompt.append(
+                self.user_message(None, use_metadata, system_message, tool_message)
+            )
         return prompt

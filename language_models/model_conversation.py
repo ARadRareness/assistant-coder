@@ -157,9 +157,11 @@ class ModelConversation:
         messages: List[ModelMessage],
         use_metadata: bool = False,
     ):
-        with open("history.log", "a") as file:
+        with open("history.log", "a", encoding="utf8") as file:
             file.write(f"< {title} >\n")
-            file.write(model.prompt_formatter.generate_prompt(messages, use_metadata))
+
+            prompt = str(model.prompt_formatter.generate_prompt(messages, use_metadata))
+            file.write(prompt)
             file.write("\n\n")
 
 

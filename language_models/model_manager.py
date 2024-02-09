@@ -2,6 +2,7 @@ import os
 import subprocess
 
 from language_models.api.llamacpp import LlamaCppModel
+from language_models.formatters.alpaca import AlpacaFormatter
 from language_models.formatters.deepseek_coder import DeepseekCoderFormatter
 from language_models.formatters.mistral import MistralFormatter
 from language_models.formatters.base import PromptFormatter
@@ -85,6 +86,8 @@ class ModelManager:
             return OrcaHashesFormatter()
         elif "deepseek" in model_path:
             return DeepseekCoderFormatter()
+        elif "alpaca" in model_path:
+            return AlpacaFormatter()
         else:
             return PromptFormatter()
 

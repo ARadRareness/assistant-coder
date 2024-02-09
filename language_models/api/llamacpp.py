@@ -34,7 +34,7 @@ class LlamaCppModel(Model):
         }
 
         with open("_input.txt", "w", encoding="utf8") as file:
-            file.write(prompt)
+            file.write(str(prompt))
 
         url = f"http://{self.host_url}:{self.host_port}/completion"
 
