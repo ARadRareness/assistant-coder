@@ -66,9 +66,9 @@ class ModelConversation:
         if use_tools and messages:
             self.handle_tool_use(model, max_tokens, messages, use_metadata=use_metadata)
 
-        response = model.generate_text(messages, max_tokens, use_metadata=use_metadata)
+            self.write_to_history("RESPONSE AFTER TOOLS", model, messages, use_metadata)
 
-        self.write_to_history("RESPONSE AFTER TOOLS", model, messages, use_metadata)
+        response = model.generate_text(messages, max_tokens, use_metadata=use_metadata)
 
         self.messages.append(
             ModelMessage(Role.ASSISTANT, response.get_text(), metadata)
