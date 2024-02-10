@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+from language_models.constants import JSON_ERROR_MESSAGE
 from language_models.model_message import MessageMetadata, ModelMessage, Role
 from language_models.model_response import ModelResponse
 
@@ -168,4 +169,4 @@ class ToolManager:
         except Exception as e:
             print(f"FAILED TO PARSE: {response_text}")
             print(f"Exception message: {str(e)}")
-            return None, response_text
+            return JSON_ERROR_MESSAGE, response_text

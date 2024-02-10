@@ -2,6 +2,7 @@ import datetime
 from typing import List
 
 from language_models.api.base import Model
+from language_models.constants import JSON_ERROR_MESSAGE, JSON_PARSE_RETRY_COUNT
 from language_models.model_message import MessageMetadata, ModelMessage, Role
 from language_models.tool_manager import ToolManager
 
@@ -124,10 +125,14 @@ class ModelConversation:
         response = model.generate_text(
             tool_messages, max_tokens=max_tokens, use_metadata=use_metadata
         )
-        output, func_to_call = self.tool_manager.parse_and_execute(response)
+
+        for _ in range(JSON_PARSE_RETRY_COUNT):
+            output, func_to_call_log = self.tool_manager.parse_and_execute(response)
+            if output != JSON_ERROR_MESSAGE:
+                break
 
         func_to_call_message = ModelMessage(
-            Role.TOOL_OUTPUT, func_to_call, last_message.get_metadata()
+            Role.TOOL_OUTPUT, func_to_call_log, last_message.get_metadata()
         )
 
         if output:
