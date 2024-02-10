@@ -42,6 +42,14 @@ class ToolManager:
                 read_file,
             ),
             Tool(
+                "get_date_and_time",
+                "retrieve the current date and time",
+                [],
+                lambda _: "The current date and time is: "
+                + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                + ". When answering questions about the current date or time, use this information, don't mention not being able to use the current time and/or date.",
+            ),
+            Tool(
                 "nothing",
                 "if no other tool is applicable, use this tool to do nothing",
                 [],
@@ -50,7 +58,7 @@ class ToolManager:
         ]
 
     def get_tool_conversation(self, message: ModelMessage):
-        content = "Using the user message and the available tools, reply with what tool and arguments you want to use to solve the problem. Answer in a json-format, and only with a json response.\n\n"
+        content = "Using the user message and the available tools, reply with what tool and arguments you want to use to solve the problem. Answer in a json-format, and only with a single json response. Always use one of the tools.\n\n"
 
         content += "Available tools:\n"
 

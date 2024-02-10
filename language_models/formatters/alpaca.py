@@ -18,10 +18,6 @@ class AlpacaFormatter(PromptFormatter):
                 prompt += f"### Input:\n{message.get_message(use_metadata)}\n\n"
             elif message.is_assistant_message():
                 prompt += f"### Response:\n{message.get_message(use_metadata)}\n\n"
-            elif message.is_tool_output_message():
-                prompt += f"### Input:\nYour tool gave the following output -> {message.get_message(use_metadata)}\n\n"
-            elif message.is_reflection_message():
-                prompt += f"### You have had the following reflections -> {message.get_message(use_metadata)}\n\n"
 
         prompt += f"### Response:\n"
 

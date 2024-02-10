@@ -39,8 +39,7 @@ class ModelConversation:
 
     def add_system_message(self, content: str, metadata: MessageMetadata):
         full_content = (
-            "Each user message contains some metadata, a timestamp and optionally a list of checked files. Unless asked for the information,"
-            " DO NOT answer with the metadata or the timestamp.\n" + content
+            "Unless required, answer briefly in a sentence or two.\n" + content
         )
         self.messages.append(ModelMessage(Role.SYSTEM, full_content, metadata))
 
@@ -69,6 +68,8 @@ class ModelConversation:
 
         response = model.generate_text(messages, max_tokens, use_metadata=use_metadata)
 
+        self.write_to_history("RESPONSE AFTER TOOLS", model, messages, use_metadata)
+
         self.messages.append(
             ModelMessage(Role.ASSISTANT, response.get_text(), metadata)
         )
@@ -87,7 +88,7 @@ class ModelConversation:
         last_message = messages.pop(-1)
 
         reflection_prompt_message = ModelMessage(
-            Role.REFLECTION,
+            Role.USER,
             "Reflect on the user message below, go step by step through your thoughts how to best fulfill the request of the message.\nMESSAGE: "
             + last_message.get_message(use_metadata=use_metadata),
             last_message.get_metadata(),
@@ -99,18 +100,8 @@ class ModelConversation:
 
         messages[-1] = last_message  # Restore the old user message
 
-        reflection_response_message = ModelMessage(
-            Role.REFLECTION, response.get_text(), last_message.get_metadata()
-        )
-
-        messages.append(reflection_response_message)
-        self.messages.append(reflection_response_message)
-
-        self.write_to_history(
-            "REFLECTION",
-            model,
-            [reflection_prompt_message, reflection_response_message],
-            use_metadata,
+        messages[-1].append_content(
+            f"(Information to the model, this is some reflections that you can use: {response.get_text()})"
         )
 
     def handle_tool_use(
@@ -127,33 +118,12 @@ class ModelConversation:
         )
 
         for _ in range(JSON_PARSE_RETRY_COUNT):
-            output, func_to_call_log = self.tool_manager.parse_and_execute(response)
+            output, _ = self.tool_manager.parse_and_execute(response)
             if output != JSON_ERROR_MESSAGE:
                 break
 
-        func_to_call_message = ModelMessage(
-            Role.TOOL_OUTPUT, func_to_call_log, last_message.get_metadata()
-        )
-
-        if output:
-            output_message = ModelMessage(
-                Role.TOOL_OUTPUT, output, last_message.get_metadata()
-            )
-            messages.append(output_message)
-
-            self.write_to_history(
-                "TOOL USE",
-                model,
-                tool_messages + [func_to_call_message, output_message],
-                use_metadata,
-            )
-        else:
-            self.write_to_history(
-                "TOOL USE",
-                model,
-                tool_messages + [func_to_call_message],
-                use_metadata,
-            )
+        if output and output != JSON_ERROR_MESSAGE:
+            messages[-1].append_content(f"(Information to the model, {output})")
 
     def write_to_history(
         self,

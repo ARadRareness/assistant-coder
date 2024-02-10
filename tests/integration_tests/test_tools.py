@@ -4,6 +4,17 @@ import unittest
 
 from client.client_api import Model
 
+TEST_RUN_COUNT = 3
+
+
+# Create an annotation allowing the test to be run multiple times
+def run_multiple_times(func):
+    def wrapper(*args, **kwargs):
+        for _ in range(TEST_RUN_COUNT):
+            func(*args, **kwargs)
+
+    return wrapper
+
 
 def add_system_message(model: Model):
     model_info = model.get_model_info()
@@ -31,6 +42,29 @@ class TestTools(unittest.TestCase):
             msg=f'The response "{response}" did not fulfill criteria "{criteria}". AI motivation: "{fact_response}"',
         )
 
+    def create_file(self, fname, temp_dir, content):
+        temp_file_path = os.path.join(temp_dir, fname)
+
+        with open(temp_file_path, "w", encoding="utf8") as fp:
+            fp.write(content)
+
+        return temp_file_path
+
+    @run_multiple_times
+    def test_tool_get_date_and_time(self):
+        model = Model(single_message_mode=False, use_tools=True, use_reflections=False)
+        add_system_message(model)
+
+        response = model.generate_response("What is the current time and date?")
+
+        print(response)
+
+        self.assert_response_is_about(
+            response,
+            "The response contains a time and a date",
+        )
+
+    @run_multiple_times
     def test_tool_nothing(self):
         model = Model(single_message_mode=False, use_tools=True, use_reflections=False)
         add_system_message(model)
@@ -44,14 +78,7 @@ class TestTools(unittest.TestCase):
             "The response contains a greeting or status update",
         )
 
-    def create_file(self, fname, temp_dir, content):
-        temp_file_path = os.path.join(temp_dir, fname)
-
-        with open(temp_file_path, "w", encoding="utf8") as fp:
-            fp.write(content)
-
-        return temp_file_path
-
+    @run_multiple_times
     def test_tool_read_file(self):
         model = Model(single_message_mode=False, use_tools=True, use_reflections=False)
         add_system_message(model)
@@ -71,6 +98,7 @@ class TestTools(unittest.TestCase):
                 response, "The response contains the secret code which is 4512"
             )
 
+    @run_multiple_times
     def test_tool_read_file_select_one(self):
         model = Model(single_message_mode=False, use_tools=True, use_reflections=False)
         add_system_message(model)
@@ -96,6 +124,7 @@ class TestTools(unittest.TestCase):
                 response, "The response contains the secret code which is 4512"
             )
 
+    @run_multiple_times
     def test_tool_read_file_summarization(self):
         model = Model(single_message_mode=False, use_tools=True, use_reflections=False)
         add_system_message(model)

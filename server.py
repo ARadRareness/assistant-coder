@@ -1,6 +1,7 @@
 import datetime
 import os
 import sys
+from typing import Dict
 from flask import Flask, jsonify, request
 import uuid
 
@@ -10,9 +11,9 @@ from language_models.model_message import MessageMetadata
 
 app = Flask(__name__)
 
-conversations: {str: ModelConversation} = {}
+conversations: Dict[str, ModelConversation] = {}
 
-model_manager = None
+model_manager: ModelManager = None
 
 
 @app.route("/start_new_conversation", methods=["GET"])

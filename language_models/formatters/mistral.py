@@ -32,7 +32,7 @@ class MistralFormatter(PromptFormatter):
         tool_message = ""
 
         for message in messages:
-            if message.is_user_message() or message.is_reflection_message():
+            if message.is_user_message():
                 prompt.append(
                     self.user_message(
                         message, use_metadata, system_message, tool_message
@@ -45,10 +45,6 @@ class MistralFormatter(PromptFormatter):
                 prompt.append(self.EOS)
             elif message.is_system_message():
                 system_message = message.get_message(use_metadata)
-            elif message.is_reflection_message():
-                system_message = message.get_message(use_metadata)
-            elif message.is_tool_output_message():
-                tool_message = message.get_message(use_metadata)
 
         if system_message or tool_message:
             prompt.append(
