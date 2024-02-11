@@ -1,23 +1,27 @@
-import datetime
 import json
 import os
 from language_models.constants import JSON_ERROR_MESSAGE
 from language_models.model_message import MessageMetadata, ModelMessage, Role
 from language_models.model_response import ModelResponse
-from language_models.tools.browse_internet import BrowseInternetTool
-from language_models.tools.date_and_time_tool import DateAndTimeTool
-from language_models.tools.nothing_tool import NothingTool
-from language_models.tools.read_file_tool import ReadFileTool
+from language_models.tools.base_tool import BaseTool
 
 
 class ToolManager:
     def __init__(self):
-        self.tools = [
-            ReadFileTool(),
-            DateAndTimeTool(),
-            BrowseInternetTool(),
-            NothingTool(),
-        ]
+        self.tools = []
+
+        # Dynamically load tools from the tools directory
+        for file in os.listdir("language_models/tools"):
+            if file.endswith(".py") and not file.startswith("__"):
+                tool_name = file.split(".")[0]
+                tool_module = __import__(
+                    f"language_models.tools.{tool_name}", fromlist=[tool_name]
+                )
+                # Get the class from the module if it has BaseTool as parent
+                for name, obj in tool_module.__dict__.items():
+                    if name.endswith("Tool") and name is not "BaseTool":
+                        if isinstance(obj, type) and issubclass(obj, BaseTool):
+                            self.tools.append(obj())
 
     def get_tool_conversation(self, message: ModelMessage):
         content = "Using the user message and the available tools, reply with what tool and arguments you want to use to solve the problem."
@@ -30,8 +34,11 @@ class ToolManager:
                 content += " AVAILABLE ARGUMENTS\n"
                 for argument in tool.arguments:
                     content += f" {argument[0]} - {argument[1]}\n"
+            content += "\n"
 
-        content += "\n\nAnswer in a json-format, and only with a single json response. You can only use a single tool, make sure it is also in the list of available tools."
+        content += (
+            "\n\nAnswer with the optimal tool and arguments to solve the user problem."
+        )
 
         tool_system_message = ModelMessage(Role.SYSTEM, content, message.get_metadata())
 
