@@ -4,6 +4,7 @@ import os
 from language_models.constants import JSON_ERROR_MESSAGE
 from language_models.model_message import MessageMetadata, ModelMessage, Role
 from language_models.model_response import ModelResponse
+from language_models.tools.browse_internet import BrowseInternetTool
 from language_models.tools.date_and_time_tool import DateAndTimeTool
 from language_models.tools.nothing_tool import NothingTool
 from language_models.tools.read_file_tool import ReadFileTool
@@ -15,10 +16,11 @@ class ToolManager:
             ReadFileTool(),
             DateAndTimeTool(),
             NothingTool(),
+            BrowseInternetTool(),
         ]
 
     def get_tool_conversation(self, message: ModelMessage):
-        content = "Using the user message and the available tools, reply with what tool and arguments you want to use to solve the problem. Answer in a json-format, and only with a single json response. Always use one of the tools.\n\n"
+        content = "Using the user message and the available tools, reply with what tool and arguments you want to use to solve the problem."
 
         content += "Available tools:\n"
 
@@ -28,6 +30,8 @@ class ToolManager:
                 content += " AVAILABLE ARGUMENTS\n"
                 for argument in tool.arguments:
                     content += f" {argument[0]} - {argument[1]}\n"
+
+        content += "\n\nAnswer in a json-format, and only with a single json response. You can only use a single tool, make sure it is also in the list of available tools."
 
         tool_system_message = ModelMessage(Role.SYSTEM, content, message.get_metadata())
 
@@ -124,12 +128,12 @@ class ToolManager:
 
             command = json.loads(handled_text)
 
-            print(response_text)
-
             if not "tool" in command or not "arguments" in command:
                 print(f"MISSING tool or arguments in: {response_text}")
 
             func = self.get_function(command)
+
+            print("COMMAND", command)
 
             if func:
                 return func(command["arguments"], metadata), handled_text

@@ -136,6 +136,21 @@ class TestTools(TestBase):
                 "The response is a summary containing information about Turing's father and mother",
             )
 
+    @run_multiple_times(1)
+    def test_tool_browse_internet(self):
+        model = Model(single_message_mode=False, use_tools=True, use_reflections=False)
+        self.add_system_message(model)
+
+        response = model.generate_response(
+            "Can you return the current week by going to https://www.epochconverter.com/weeknumbers for me?"
+        )
+
+        print(response)
+        self.assert_response_is_about(
+            response,
+            "The response contains a week number",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
