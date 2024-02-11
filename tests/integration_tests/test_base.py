@@ -11,7 +11,7 @@ def run_multiple_times(count=None):
 
     def decorator(func):
         def wrapper(*args, **kwargs):
-            repetitions = count if count is not None else 3
+            repetitions = count if count is not None else TEST_RUN_COUNT
             for _ in range(repetitions):
                 func(*args, **kwargs)
 

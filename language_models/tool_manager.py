@@ -4,57 +4,17 @@ import os
 from language_models.constants import JSON_ERROR_MESSAGE
 from language_models.model_message import MessageMetadata, ModelMessage, Role
 from language_models.model_response import ModelResponse
-
-
-class Tool:
-    def __init__(self, name, description, arguments, tool_function):
-        self.name = name
-        self.description = description
-        self.arguments = arguments
-        self.tool_function = tool_function
-
-
-def read_file(arguments):
-    if "FILEPATH" in arguments:
-        fpath = arguments["FILEPATH"]
-        print(f"READ FILE with filepath {fpath}!")
-        if os.path.isfile(fpath):
-            with open(fpath, "r", encoding="utf8") as f:
-                return f"FILE CONTENT OF {fpath}:\n{f.read()}"
-        else:
-            print("FILE WAS NOT FOUND!")
-    else:
-        print("READ FILE with UNKNOWN ARGUMENTS")
+from language_models.tools.date_and_time_tool import DateAndTimeTool
+from language_models.tools.nothing_tool import NothingTool
+from language_models.tools.read_file_tool import ReadFileTool
 
 
 class ToolManager:
     def __init__(self):
         self.tools = [
-            Tool(
-                "read_file",
-                "read the content of a specific file",
-                [
-                    (
-                        "FILEPATH",
-                        "(MANDATORY) specifies the filepath of the file to read, only one file is allowed",
-                    )
-                ],
-                read_file,
-            ),
-            Tool(
-                "get_date_and_time",
-                "retrieve the current date and time",
-                [],
-                lambda _: "The current date and time is: "
-                + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                + ". When answering questions about the current date or time, use this information, don't mention not being able to use the current time and/or date.",
-            ),
-            Tool(
-                "nothing",
-                "if no other tool is applicable, use this tool to do nothing",
-                [],
-                None,
-            ),
+            ReadFileTool(),
+            DateAndTimeTool(),
+            NothingTool(),
         ]
 
     def get_tool_conversation(self, message: ModelMessage):
@@ -80,7 +40,7 @@ class ToolManager:
         )
         example_assistant_message = ModelMessage(
             Role.ASSISTANT,
-            '{"tool": "read_file", "arguments": {"FILEPATH": "%s"}}' % (example_path),
+            '{"tool": "read_file", "arguments": {"FILEINDEX": "0"}}',
             MessageMetadata(datetime.datetime.now(), [example_path]),
         )
 
@@ -109,7 +69,7 @@ class ToolManager:
         target_tool = command["tool"].replace("\\", "")
         for tool in self.tools:
             if target_tool == tool.name:
-                return tool.tool_function
+                return tool.action
 
         return None
 
@@ -156,7 +116,7 @@ class ToolManager:
 
         return new_response
 
-    def parse_and_execute(self, response: ModelResponse):
+    def parse_and_execute(self, response: ModelResponse, metadata: MessageMetadata):
         try:
             response_text = response.get_text().strip()
             handled_text = self.handle_json(response_text).replace("\\_", "_")
@@ -164,13 +124,15 @@ class ToolManager:
 
             command = json.loads(handled_text)
 
+            print(response_text)
+
             if not "tool" in command or not "arguments" in command:
                 print(f"MISSING tool or arguments in: {response_text}")
 
             func = self.get_function(command)
 
             if func:
-                return func(command["arguments"]), handled_text
+                return func(command["arguments"], metadata), handled_text
             else:
                 return None, handled_text
 

@@ -43,7 +43,12 @@ class ModelMessage:
 
         if self.metadata.selected_files:
             files = ['"' + file + '"' for file in self.metadata.selected_files]
-            info += f"The currently selected files are {', '.join(files)}. "
+
+            numbered_list = []
+            for i, file in enumerate(files):
+                numbered_list.append(f"{i}. {file}")
+
+            info += f"The currently selected files are {', '.join(numbered_list)}. "
 
         if info:
             info = f"[Metadata info provided with the message, don't write it out unless necessary: {info.strip()}] "

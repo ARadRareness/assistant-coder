@@ -97,6 +97,16 @@ class TestTools(TestBase):
                 response, "The response contains the secret code which is 4512"
             )
 
+            response = model.generate_response(
+                "Read the file, what is the secret code?",
+                selected_files=[recipes_path, secret_code_path],
+            )
+
+            print(response)
+            self.assert_response_is_about(
+                response, "The response contains the secret code which is 4512"
+            )
+
     @run_multiple_times
     def test_tool_read_file_summarization(self):
         model = Model(single_message_mode=False, use_tools=True, use_reflections=False)

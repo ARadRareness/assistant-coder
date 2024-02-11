@@ -118,7 +118,9 @@ class ModelConversation:
         )
 
         for _ in range(JSON_PARSE_RETRY_COUNT):
-            output, _ = self.tool_manager.parse_and_execute(response)
+            output, _ = self.tool_manager.parse_and_execute(
+                response, tool_messages[-1].get_metadata()
+            )
             if output != JSON_ERROR_MESSAGE:
                 break
 

@@ -4,7 +4,7 @@ from tests.integration_tests.test_base import TestBase, run_multiple_times
 
 class TestConversations(TestBase):
 
-    @run_multiple_times(1)
+    @run_multiple_times
     def test_conversation_with_secret_code(self):
         model = Model(single_message_mode=False, use_tools=False, use_reflections=False)
         self.add_system_message(model)
@@ -32,5 +32,5 @@ class TestConversations(TestBase):
         response = model.generate_response("What is my secret code?")
         self.assert_response_is_about(
             response,
-            "The response contains the secret code",
+            "The response contains the secret code 4512",
         )
