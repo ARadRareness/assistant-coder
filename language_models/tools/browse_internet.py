@@ -30,4 +30,10 @@ class BrowseInternetTool(BaseTool):
         soup = bs4.BeautifulSoup(response.text, "html.parser")
 
         text_content = soup.get_text()
-        return f"CONTENT OF URL {url}: {text_content}"
+        return f"WEBPAGE CONTENT OF URL {url}: {text_content}"
+
+    def get_example_messages(self):
+        return self.get_example_dialogue(
+            "What's the title of this webpage? https://www.youtube.com/watch?v=hleHx2Uiqmo",
+            '{"tool": "browse_internet", "arguments": {"URL": "https://www.youtube.com/watch?v=hleHx2Uiqmo"}}',
+        )

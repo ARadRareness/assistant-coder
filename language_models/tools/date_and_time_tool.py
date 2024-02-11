@@ -18,3 +18,6 @@ class DateAndTimeTool(BaseTool):
             + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             + ". When answering questions about the current date or time, use this information, don't mention not being able to use the current time and/or date."
         )
+
+    def get_example_messages(self):
+        return []

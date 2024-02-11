@@ -12,3 +12,8 @@ class NothingTool(BaseTool):
 
     def action(self, arguments, metadata: MessageMetadata):
         return None
+
+    def get_example_messages(self):
+        return self.get_example_dialogue(
+            "Say something funny!", '{"tool": "nothing", "arguments": {}}'
+        )

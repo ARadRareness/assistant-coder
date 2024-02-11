@@ -34,3 +34,9 @@ class ReadFileTool(BaseTool):
                 print("FILE WAS NOT FOUND!")
         else:
             print("READ FILE with UNKNOWN ARGUMENTS")
+
+    def get_example_messages(self):
+        return self.get_example_dialogue(
+            "Read the content of the selected file for me please.",
+            '{"tool": "read_file", "arguments": {"FILEINDEX": "0"}}',
+        )

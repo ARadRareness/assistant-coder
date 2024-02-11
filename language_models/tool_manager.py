@@ -15,8 +15,8 @@ class ToolManager:
         self.tools = [
             ReadFileTool(),
             DateAndTimeTool(),
-            NothingTool(),
             BrowseInternetTool(),
+            NothingTool(),
         ]
 
     def get_tool_conversation(self, message: ModelMessage):
@@ -35,38 +35,13 @@ class ToolManager:
 
         tool_system_message = ModelMessage(Role.SYSTEM, content, message.get_metadata())
 
-        example_path = "C:\\test.txt"
+        messages = [tool_system_message]
 
-        example_user_message = ModelMessage(
-            Role.USER,
-            "Read the content of the selected file for me please.",
-            MessageMetadata(datetime.datetime.now(), [example_path]),
-        )
-        example_assistant_message = ModelMessage(
-            Role.ASSISTANT,
-            '{"tool": "read_file", "arguments": {"FILEINDEX": "0"}}',
-            MessageMetadata(datetime.datetime.now(), [example_path]),
-        )
+        for tool in self.tools:
+            for example_message in tool.get_example_messages():
+                messages.append(example_message)
 
-        example_user_message2 = ModelMessage(
-            Role.USER,
-            "Say something funny!",
-            MessageMetadata(datetime.datetime.now(), [example_path]),
-        )
-        example_assistant_message2 = ModelMessage(
-            Role.ASSISTANT,
-            '{"tool": "nothing", "arguments": {}}',
-            MessageMetadata(datetime.datetime.now(), [example_path]),
-        )
-
-        messages = [
-            tool_system_message,
-            example_user_message,
-            example_assistant_message,
-            example_user_message2,
-            example_assistant_message2,
-            message,
-        ]
+        messages.append(message)
         return messages
 
     def get_function(self, command):
