@@ -13,11 +13,13 @@ class Model:
         single_message_mode: bool = True,
         use_tools: bool = False,
         use_reflections: bool = False,
+        use_suggestions: bool = False,
     ):
         self.conversation_id = start_conversation()
         self.single_message_mode = single_message_mode
         self.use_tools = use_tools
         self.use_reflections = use_reflections
+        self.use_suggestions = use_suggestions
 
     def add_system_message(self, message: str):
         return add_system_message(self.conversation_id, message)
@@ -46,6 +48,7 @@ class Model:
             single_message_mode=self.single_message_mode,
             use_tools=self.use_tools,
             use_reflections=self.use_reflections,
+            use_suggestions=self.use_suggestions,
         )
 
 
@@ -142,6 +145,7 @@ def generate_response(
     single_message_mode: bool = False,
     use_tools: bool = False,
     use_reflections: bool = False,
+    use_suggestions: bool = False,
 ):
     payload = {
         "conversation_id": conversation_id,
@@ -152,6 +156,7 @@ def generate_response(
         "single_message_mode": single_message_mode == True,
         "use_tools": use_tools == True,
         "use_reflections": use_reflections == True,
+        "use_suggestions": use_suggestions == True,
     }
 
     response = requests.post(f"{BASE_URL}/generate_response", json=payload)
@@ -163,7 +168,10 @@ def generate_response(
     data = response.json()
 
     if data["result"]:
-        return data["response"]
+        if use_suggestions:
+            return data["response"], data["suggestions"]
+        else:
+            return data["response"]
     else:
         print(f"Error generating response: {data}")
         return None

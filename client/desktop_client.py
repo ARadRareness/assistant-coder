@@ -150,6 +150,9 @@ class AssistantCoder(QMainWindow):
         self.use_reflections_action = self.add_checkable_menu_action(
             "Use reflections", window_menu, options_menu, checked_by_default=False
         )
+        self.use_suggestions_action = self.add_checkable_menu_action(
+            "Use suggestions", window_menu, options_menu, checked_by_default=False
+        )
         window_menu.addSeparator()
         options_menu.addSeparator()
 
@@ -285,42 +288,6 @@ class AssistantCoder(QMainWindow):
         self.display_message("User: " + command, color="darkblue")
 
         self.message_sender.send_message(command)
-
-    def send_message(self, command):
-        selected_files = list(self.checked_files)
-
-        chat_mode = self.chat_mode_action.isChecked()
-        use_tools = self.use_tools_action.isChecked()
-        use_reflections = self.use_reflections_action.isChecked()
-
-        response = client_api.generate_response(
-            self.conversation_id,
-            command,
-            selected_files=selected_files,
-            single_message_mode=not chat_mode,
-            use_tools=use_tools,
-            use_reflections=use_reflections,
-            max_tokens=1000,
-        )
-
-        if not response:
-            self.conversation_id = client_api.start_conversation()
-            self.add_system_message()
-
-            response = client_api.generate_response(
-                self.conversation_id,
-                command,
-                selected_files=selected_files,
-                single_message_mode=not chat_mode,
-                use_tools=use_tools,
-                use_reflections=use_reflections,
-                max_tokens=1000,
-            )
-
-        if response:
-            # Update the GUI with the response
-            self.display_message("AC: " + response, color="darkred")
-            print(response)
 
     def open_directory(self):
         directory = QFileDialog.getExistingDirectory(
@@ -572,36 +539,43 @@ class MessageSender(QObject):
         chat_mode = self._parent.chat_mode_action.isChecked()
         use_tools = self._parent.use_tools_action.isChecked()
         use_reflections = self._parent.use_reflections_action.isChecked()
+        use_suggestions = self._parent.use_suggestions_action.isChecked()
 
         def generate_response_thread():
             try:
-                response = client_api.generate_response(
-                    self._parent.conversation_id,
-                    command,
-                    selected_files=selected_files,
-                    single_message_mode=not chat_mode,
-                    use_tools=use_tools,
-                    use_reflections=use_reflections,
-                    max_tokens=1000,
-                )
+                for i in range(2):
+                    if use_suggestions:
+                        response, suggestions = client_api.generate_response(
+                            self._parent.conversation_id,
+                            command,
+                            selected_files=selected_files,
+                            single_message_mode=not chat_mode,
+                            use_tools=use_tools,
+                            use_reflections=use_reflections,
+                            use_suggestions=use_suggestions,
+                            max_tokens=1000,
+                        )
+                        print(suggestions)
+                    else:
+                        response = client_api.generate_response(
+                            self._parent.conversation_id,
+                            command,
+                            selected_files=selected_files,
+                            single_message_mode=not chat_mode,
+                            use_tools=use_tools,
+                            use_reflections=use_reflections,
+                            use_suggestions=use_suggestions,
+                            max_tokens=1000,
+                        )
 
-                if not response:
-                    self._parent.conversation_id = client_api.start_conversation()
-                    self._parent.add_system_message()
-
-                    response = client_api.generate_response(
-                        self._parent.conversation_id,
-                        command,
-                        selected_files=selected_files,
-                        single_message_mode=not chat_mode,
-                        use_tools=use_tools,
-                        use_reflections=use_reflections,
-                        max_tokens=1000,
-                    )
+                    if not response and i == 0:
+                        self._parent.conversation_id = client_api.start_conversation()
+                        self._parent.add_system_message()
 
                 if response:
                     self.message_received.emit("AC: " + response)
                     print(response)
+
             except Exception as e:
                 print("Error in generate_response_thread:", e)
 

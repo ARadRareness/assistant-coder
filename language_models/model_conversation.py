@@ -3,6 +3,7 @@ from typing import List
 
 from language_models.api.base import Model
 from language_models.constants import JSON_ERROR_MESSAGE, JSON_PARSE_RETRY_COUNT
+from language_models.helpers.json_parser import parse_json
 from language_models.model_message import MessageMetadata, ModelMessage, Role
 from language_models.tool_manager import ToolManager
 
@@ -77,6 +78,26 @@ class ModelConversation:
         self.write_to_history("RESPONSE", model, self.messages[-1:], use_metadata)
 
         return response.get_text()
+
+    def generate_suggestions(self, model: Model):
+        messages = self.get_messages(single_message_mode=False)
+
+        messages.append(
+            ModelMessage(
+                Role.USER,
+                (
+                    "Suggest 3 reasonable follow up questions or instructions based on the previous conversation."
+                    + ' Write them out using JSON notation as following {"suggestions": ["suggestion1", "suggestion2", "suggestion3"]}.'
+                ),
+                generate_metadata(),
+            )
+        )
+
+        response = model.generate_text(messages, max_tokens=200)
+
+        print(response.get_text())
+
+        return parse_json(response.get_text())["suggestions"]
 
     def handle_reflections(
         self,

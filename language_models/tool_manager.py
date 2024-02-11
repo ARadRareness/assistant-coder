@@ -1,6 +1,7 @@
 import json
 import os
 from language_models.constants import JSON_ERROR_MESSAGE
+from language_models.helpers.json_parser import handle_json
 from language_models.model_message import MessageMetadata, ModelMessage, Role
 from language_models.model_response import ModelResponse
 from language_models.tools.base_tool import BaseTool
@@ -19,9 +20,12 @@ class ToolManager:
                 )
                 # Get the class from the module if it has BaseTool as parent
                 for name, obj in tool_module.__dict__.items():
-                    if name.endswith("Tool") and name is not "BaseTool":
-                        if isinstance(obj, type) and issubclass(obj, BaseTool):
-                            self.tools.append(obj())
+                    if (
+                        name is not "BaseTool"
+                        and isinstance(obj, type)
+                        and issubclass(obj, BaseTool)
+                    ):
+                        self.tools.append(obj())
 
     def get_tool_conversation(self, message: ModelMessage):
         content = "Using the user message and the available tools, reply with what tool and arguments you want to use to solve the problem."
@@ -59,23 +63,6 @@ class ToolManager:
 
         return None
 
-    def handle_json(self, response: str):
-        level_count = 0
-        start_index = -1
-        end_index = -1
-        for i, char in enumerate(response):
-            if char == "{":
-                if start_index == -1:
-                    start_index = i
-                level_count += 1
-            elif char == "}":
-                level_count -= 1
-                if level_count == 0:
-                    end_index = i + 1
-                    break
-
-        return response[start_index:end_index]
-
     def add_backslashes(self, response: str):
         """Not so pretty hack to inject backslashes into string
         since json.loads requires 4 backslashes to indicate paths
@@ -105,7 +92,7 @@ class ToolManager:
     def parse_and_execute(self, response: ModelResponse, metadata: MessageMetadata):
         try:
             response_text = response.get_text().strip()
-            handled_text = self.handle_json(response_text).replace("\\_", "_")
+            handled_text = handle_json(response_text).replace("\\_", "_")
             handled_text = self.add_backslashes(handled_text)
 
             command = json.loads(handled_text)

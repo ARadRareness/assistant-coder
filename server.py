@@ -131,6 +131,7 @@ def generate_response():
         single_message_mode = data.get("single_message_mode")
         use_tools = data.get("use_tools")
         use_reflections = data.get("use_reflections")
+        use_suggestions = data.get("use_suggestions")
 
         timestamp = datetime.datetime.now()
         selected_files = data.get("selected_files")
@@ -154,7 +155,16 @@ def generate_response():
             use_reflections=use_reflections,
         )
 
-        return jsonify({"result": True, "response": response})
+        if use_suggestions:
+            suggestions = conversations[conversation_id].generate_suggestions(
+                model_manager.models[0]
+            )
+
+            return jsonify(
+                {"result": True, "response": response, "suggestions": suggestions}
+            )
+        else:
+            return jsonify({"result": True, "response": response})
 
     except Exception as e:
         return jsonify({"result": False, "error": str(e)})
