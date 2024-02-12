@@ -3,3 +3,5 @@ gguf
 gradio
 huggingface_hub
 PySide6
+requests
+beautifulsoup4

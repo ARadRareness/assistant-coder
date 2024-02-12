@@ -97,8 +97,11 @@ class ToolManager:
 
             command = json.loads(handled_text)
 
-            if not "tool" in command or not "arguments" in command:
-                print(f"MISSING tool or arguments in: {response_text}")
+            if not "tool" in command:
+                print(f"MISSING tool in: {response_text}")
+
+            if not "arguments" in command:
+                command["arguments"] = []
 
             func = self.get_function(command)
 

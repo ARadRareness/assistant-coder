@@ -329,17 +329,21 @@ class AssistantCoder(QMainWindow):
     def download_method(self, repo_id, filename):
         print(f"Downloading model from {repo_id} with name {filename}")
 
-        model_path = os.path.join("models", filename)
+        model_dir_paths = ["models", os.path.join("..", "models")]
 
-        if not os.path.exists(model_path):
-            downloaded_model_path = hf_hub_download(
-                repo_id=repo_id,
-                filename=filename,
-                use_auth_token=False,
-            )
+        for model_dir_path in model_dir_paths:
+            if os.path.exists(model_dir_path):
+                model_path = os.path.join(model_dir_path, filename)
+                if not os.path.exists(model_path):
+                    downloaded_model_path = hf_hub_download(
+                        repo_id=repo_id,
+                        filename=filename,
+                        use_auth_token=False,
+                    )
 
-            # Move the downloaded model to the models folder
-            os.rename(downloaded_model_path, model_path)
+                    # Move the downloaded model to the models folder
+                    os.rename(downloaded_model_path, model_path)
+                break
 
 
 class DownloadModelDialog(QDialog):
