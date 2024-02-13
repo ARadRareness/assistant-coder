@@ -22,11 +22,14 @@ from PySide6.QtWidgets import (
     QPushButton,
     QVBoxLayout,
     QComboBox,
+    QToolButton,
 )
 
 from PySide6.QtGui import QTextCursor, QColor, QTextCharFormat, QAction
 
 from PySide6.QtCore import QObject, QDir, Qt, Signal, QSize
+
+from functools import partial
 
 from huggingface_hub import hf_hub_download
 
@@ -51,6 +54,9 @@ class AssistantCoder(QMainWindow):
         self.message_sender.message_received.connect(
             lambda message: self.display_message(message, color="darkred")
         )
+        self.message_sender.suggestions_received.connect(
+            lambda suggestions: self.display_suggestions(suggestions)
+        )
 
         dark_mode = False
 
@@ -67,6 +73,8 @@ class AssistantCoder(QMainWindow):
         self.add_system_message()
 
         self.init_ui()
+
+        self.suggestions_dialog = SuggestionsDialog(self.send_command)
 
     def init_ui(self):
         self.create_window_and_system_menu()
@@ -246,6 +254,11 @@ class AssistantCoder(QMainWindow):
         self.chat_display.setTextCursor(cursor)
         cursor.movePosition(QTextCursor.End)
 
+    def display_suggestions(self, suggestions):
+        # Display suggestions in a separate pop-up window, where the user can click on a suggestion to send it as a command
+        self.suggestions_dialog.set_suggestions(suggestions)
+        self.suggestions_dialog.show()
+
     def populate_tree(self, directory, parent_index):
         model = self.centralWidget().layout().itemAt(0).widget().model()
         item_index = model.index(directory)
@@ -280,6 +293,11 @@ class AssistantCoder(QMainWindow):
 
     def focus_command_input(self):
         self.command.setFocus()
+
+    def send_command(self, command):
+        print("Sending command:", command)
+        self.display_message("User: " + command, color="darkblue")
+        self.message_sender.send_message(command)
 
     def execute_command(self):
         command = self.command.toPlainText().strip()
@@ -532,6 +550,7 @@ class CommandTextEdit(QTextEdit):
 
 class MessageSender(QObject):
     message_received = Signal(str)
+    suggestions_received = Signal(list)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -546,6 +565,7 @@ class MessageSender(QObject):
         use_suggestions = self._parent.use_suggestions_action.isChecked()
 
         def generate_response_thread():
+            suggestions = []
             try:
                 for i in range(2):
                     if use_suggestions:
@@ -578,6 +598,10 @@ class MessageSender(QObject):
 
                 if response:
                     self.message_received.emit("AC: " + response)
+
+                    if suggestions:
+                        self.suggestions_received.emit(suggestions)
+
                     print(response)
 
             except Exception as e:
@@ -585,6 +609,53 @@ class MessageSender(QObject):
 
         response_thread = threading.Thread(target=generate_response_thread)
         response_thread.start()
+
+
+class SuggestionsDialog(QDialog):
+    def __init__(self, send_command, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Suggestions")
+        self.suggestions = []  # suggestions
+        self.init_ui()
+        self.send_command = send_command
+        self.buttons = []
+
+    def set_suggestions(self, suggestions):
+        self.suggestions = suggestions
+
+        # Remove previous widgets from self.layout
+        for i in reversed(range(self.layout.count())):
+            self.layout.itemAt(i).widget().setParent(None)
+
+        for suggestion in self.suggestions:
+            button = QToolButton(self)
+            button.setText(self.split_suggestion(suggestion))
+            button.clicked.connect(partial(self.send, suggestion))
+            self.layout.addWidget(button)
+
+    def split_suggestion(self, suggestion):
+        words = suggestion.split()
+        lines = []
+        current_line = ""
+
+        for word in words:
+            if len(current_line) + len(word) <= 80:
+                current_line += word + " "
+            else:
+                lines.append(current_line)
+                current_line = word + " "
+
+        if current_line:
+            lines.append(current_line)
+
+        return "\n".join(lines)
+
+    def send(self, message):
+        self.send_command(message)
+
+    def init_ui(self):
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
 
 
 if __name__ == "__main__":
