@@ -1,31 +1,14 @@
 import json
-import os
 from language_models.constants import JSON_ERROR_MESSAGE
 from language_models.helpers.json_parser import handle_json
+from language_models.helpers.tool_helper import load_available_tools
 from language_models.model_message import MessageMetadata, ModelMessage, Role
 from language_models.model_response import ModelResponse
-from language_models.tools.base_tool import BaseTool
 
 
 class ToolManager:
     def __init__(self):
-        self.tools = []
-
-        # Dynamically load tools from the tools directory
-        for file in os.listdir("language_models/tools"):
-            if file.endswith(".py") and not file.startswith("__"):
-                tool_name = file.split(".")[0]
-                tool_module = __import__(
-                    f"language_models.tools.{tool_name}", fromlist=[tool_name]
-                )
-                # Get the class from the module if it has BaseTool as parent
-                for name, obj in tool_module.__dict__.items():
-                    if (
-                        name != "BaseTool"
-                        and isinstance(obj, type)
-                        and issubclass(obj, BaseTool)
-                    ):
-                        self.tools.append(obj())
+        self.tools = load_available_tools()
 
     def get_tool_conversation(self, message: ModelMessage):
         content = "Using the user message and the available tools, reply with what tool and arguments you want to use to solve the problem."

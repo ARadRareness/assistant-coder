@@ -151,6 +151,19 @@ class TestTools(TestBase):
             "The response contains a week number",
         )
 
+    @run_multiple_times
+    def test_list_available_tools(self):
+        model = Model(single_message_mode=False, use_tools=True, use_reflections=False)
+        self.add_system_message(model)
+
+        response = model.generate_response("What tools are available?")
+
+        print(response)
+        self.assert_response_is_about(
+            response,
+            "The response contains a list of available tools",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
