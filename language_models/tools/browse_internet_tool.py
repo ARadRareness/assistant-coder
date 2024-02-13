@@ -8,11 +8,11 @@ class BrowseInternetTool(BaseTool):
     def __init__(self):
         super().__init__(
             "browse_internet",
-            "browse the internet by downloading a webpage and reading its content",
+            "Using this tool, you have the ability to browse the internet, download webpages and read their content",
             [
                 (
                     "URL",
-                    "(MANDATORY) specifies the url of the webpage to download and read its content",
+                    "(MANDATORY) specifies the url of the webpage to download and retrieve content from",
                 )
             ],
         )

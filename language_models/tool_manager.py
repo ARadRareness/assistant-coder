@@ -23,9 +23,7 @@ class ToolManager:
                     content += f" {argument[0]} - {argument[1]}\n"
             content += "\n"
 
-        content += (
-            "\n\nAnswer with the optimal tool and arguments to solve the user problem."
-        )
+        content += "\n\nAnswer with the optimal tool and arguments to solve the provided problem. It is essential that you use the best tool and arguments to solve the problem."
 
         tool_system_message = ModelMessage(Role.SYSTEM, content, message.get_metadata())
 
