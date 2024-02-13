@@ -34,3 +34,19 @@ class TestConversations(TestBase):
             response,
             "The response contains the secret code 4512",
         )
+
+    @run_multiple_times
+    def test_suggestions(self):
+        model = Model(
+            single_message_mode=False,
+            use_tools=False,
+            use_reflections=False,
+            use_suggestions=True,
+        )
+        self.add_system_message(model)
+
+        response, suggestions = model.generate_response("Hi, how are you?")
+        self.assert_response_is_about(
+            response,
+            "The response contains a greeting or status update",
+        )

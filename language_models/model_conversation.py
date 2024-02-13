@@ -87,7 +87,7 @@ class ModelConversation:
                 Role.USER,
                 (
                     "Suggest 3 reasonable follow up questions or instructions based on the previous conversation."
-                    + ' Write them out using JSON notation as following {"suggestions": ["suggestion1", "suggestion2", "suggestion3"]}.'
+                    + ' Write them out using JSON notation as following {"suggestions": ["suggestion1", "suggestion2", "suggestion3"]}. Do not write any comments, only the json object.'
                 ),
                 generate_metadata(),
             )
