@@ -595,6 +595,8 @@ class MessageSender(QObject):
                     if not response and i == 0:
                         self._parent.conversation_id = client_api.start_conversation()
                         self._parent.add_system_message()
+                    else:
+                        break
 
                 if response:
                     self.message_received.emit("AC: " + response)

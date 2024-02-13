@@ -21,7 +21,7 @@ class ToolManager:
                 # Get the class from the module if it has BaseTool as parent
                 for name, obj in tool_module.__dict__.items():
                     if (
-                        name is not "BaseTool"
+                        name != "BaseTool"
                         and isinstance(obj, type)
                         and issubclass(obj, BaseTool)
                     ):
