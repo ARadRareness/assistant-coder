@@ -1,9 +1,12 @@
 from typing import List
 from angle_emb import AnglE, Prompts
 
+from language_models.embedding_models.base import EmbeddingModel
 
-class AngleEmbeddingModel:
+
+class AngleEmbeddingModel(EmbeddingModel):
     def __init__(self):
+        super().__init__(1024)
         self.model = AnglE.from_pretrained(
             "WhereIsAI/UAE-Large-V1", pooling_strategy="cls"
         ).cuda()

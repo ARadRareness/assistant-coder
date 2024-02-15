@@ -156,9 +156,15 @@ def generate_response():
         )
 
         if use_suggestions:
-            suggestions = conversations[conversation_id].generate_suggestions(
-                model_manager.models[0]
-            )
+            for _ in range(3):
+                try:
+                    suggestions = conversations[conversation_id].generate_suggestions(
+                        model_manager.models[0]
+                    )
+                    break
+                except Exception as e:
+                    print(e)
+                    suggestions = []
 
             return jsonify(
                 {"result": True, "response": response, "suggestions": suggestions}
