@@ -46,7 +46,7 @@ class ModelMessage:
 
             numbered_list = []
             for i, file in enumerate(files):
-                numbered_list.append(f"{i}. {file}")
+                numbered_list.append(f"{i+1}. {file}")
 
             info += f"The currently selected files are {', '.join(numbered_list)}. "
 

@@ -151,6 +151,19 @@ class TestTools(TestBase):
             "The response contains a week number",
         )
 
+    @run_multiple_times(1)
+    def test_tool_search_the_web(self):
+        model = Model(single_message_mode=False, use_tools=True, use_reflections=False)
+        self.add_system_message(model)
+
+        response = model.generate_response("Who wrote the book Murtagh?")
+
+        print(response)
+        self.assert_response_is_about(
+            response,
+            "The response mentions Christopher Paolini",
+        )
+
     @run_multiple_times
     def test_list_available_tools(self):
         model = Model(single_message_mode=False, use_tools=True, use_reflections=False)

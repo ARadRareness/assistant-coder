@@ -9,3 +9,5 @@ beautifulsoup4
 angle-emb
 sentence-transformers
 faiss-cpu
+
+duckduckgo-search

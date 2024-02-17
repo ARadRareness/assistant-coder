@@ -11,7 +11,7 @@ class ReadFileTool(BaseTool):
             [
                 (
                     "FILEINDEX",
-                    "(MANDATORY) specifies the index (from 0) of the file to read, only one file is allowed",
+                    "(MANDATORY) specifies the index (from 1) of the file to read, only one file is allowed",
                 )
             ],
         )
@@ -20,11 +20,11 @@ class ReadFileTool(BaseTool):
         if "FILEINDEX" in arguments:
             file_index = int(arguments["FILEINDEX"])
 
-            if not metadata or file_index >= len(metadata.selected_files):
+            if not metadata or 0 >= file_index > len(metadata.selected_files):
                 print("Invalid file index!")
                 return None
 
-            fpath = metadata.selected_files[file_index]
+            fpath = metadata.selected_files[file_index - 1]
             print(f"READ FILE with index {file_index}!")
             print(f"READ FILE with filepath {fpath}!")
             if os.path.isfile(fpath):
@@ -38,5 +38,5 @@ class ReadFileTool(BaseTool):
     def get_example_messages(self):
         return self.get_example_dialogue(
             "Read the content of the selected file for me please.",
-            '{"tool": "read_file", "arguments": {"FILEINDEX": "0"}}',
+            '{"tool": "read_file", "arguments": {"FILEINDEX": "1"}}',
         )
