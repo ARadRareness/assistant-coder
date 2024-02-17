@@ -49,6 +49,58 @@ def add_system_message():
         return jsonify({"result": False, "error_message": str(e)})
 
 
+@app.route("/add_user_message", methods=["POST"])
+def add_user_message():
+    try:
+        data = request.get_json()
+        conversation_id = data.get("conversation_id")
+        message = data.get("message")
+
+        if not conversation_id or not message:
+            raise ValueError("Missing conversation_id or message in the request.")
+
+        if conversation_id not in conversations:
+            raise ValueError(f"Conversation with id {conversation_id} not found.")
+
+        timestamp = datetime.datetime.now()
+        selected_files = data.get("selected_files")
+
+        metadata = MessageMetadata(timestamp, selected_files)
+
+        conversations[conversation_id].add_user_message(message, metadata)
+
+        return jsonify({"result": True})
+
+    except Exception as e:
+        return jsonify({"result": False, "error_message": str(e)})
+
+
+@app.route("/add_assistant_message", methods=["POST"])
+def add_assistant_message():
+    try:
+        data = request.get_json()
+        conversation_id = data.get("conversation_id")
+        message = data.get("message")
+
+        if not conversation_id or not message:
+            raise ValueError("Missing conversation_id or message in the request.")
+
+        if conversation_id not in conversations:
+            raise ValueError(f"Conversation with id {conversation_id} not found.")
+
+        timestamp = datetime.datetime.now()
+        selected_files = data.get("selected_files")
+
+        metadata = MessageMetadata(timestamp, selected_files)
+
+        conversations[conversation_id].add_assistant_message(message, metadata)
+
+        return jsonify({"result": True})
+
+    except Exception as e:
+        return jsonify({"result": False, "error_message": str(e)})
+
+
 @app.route("/get_conversation", methods=["GET"])
 def get_conversation():
     try:

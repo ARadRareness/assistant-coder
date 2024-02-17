@@ -38,6 +38,9 @@ class ModelConversation:
     def add_user_message(self, content: str, metadata: MessageMetadata):
         self.messages.append(ModelMessage(Role.USER, content, metadata))
 
+    def add_assistant_message(self, content: str, metadata: MessageMetadata):
+        self.messages.append(ModelMessage(Role.ASSISTANT, content, metadata))
+
     def add_system_message(self, content: str, metadata: MessageMetadata):
         full_content = (
             "Unless required, answer briefly in a sentence or two.\n" + content

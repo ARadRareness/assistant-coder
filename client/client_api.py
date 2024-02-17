@@ -24,6 +24,12 @@ class Model:
     def add_system_message(self, message: str):
         return add_system_message(self.conversation_id, message)
 
+    def add_user_message(self, message: str):
+        return add_user_message(self.conversation_id, message)
+
+    def add_assistant_message(self, message: str):
+        return add_assistant_message(self.conversation_id, message)
+
     def get_conversation(self):
         return get_conversation(self.conversation_id)
 
@@ -68,6 +74,32 @@ def add_system_message(conversation_id: str, message: str):
 
     if response.status_code != 200:
         print(f"Error adding system message. status_code={response.status_code}")
+        return False
+
+    data = response.json()
+
+    return data["result"]
+
+
+def add_user_message(conversation_id: str, message: str):
+    payload = {"conversation_id": conversation_id, "message": message}
+    response = requests.post(f"{BASE_URL}/add_user_message", json=payload)
+
+    if response.status_code != 200:
+        print(f"Error adding user message. status_code={response.status_code}")
+        return False
+
+    data = response.json()
+
+    return data["result"]
+
+
+def add_assistant_message(conversation_id: str, message: str):
+    payload = {"conversation_id": conversation_id, "message": message}
+    response = requests.post(f"{BASE_URL}/add_assistant_message", json=payload)
+
+    if response.status_code != 200:
+        print(f"Error adding assistant message. status_code={response.status_code}")
         return False
 
     data = response.json()
