@@ -4,6 +4,7 @@ from typing import List
 from language_models.api.base import Model
 from language_models.constants import JSON_ERROR_MESSAGE, JSON_PARSE_RETRY_COUNT
 from language_models.helpers.json_parser import parse_json
+from language_models.memory_manager import MemoryManager
 from language_models.model_message import MessageMetadata, ModelMessage, Role
 from language_models.tool_manager import ToolManager
 
@@ -13,6 +14,7 @@ class ModelConversation:
         self.messages = []
         self.single_message_mode = single_message_mode
         self.tool_manager = ToolManager()
+        self.memory_manager = MemoryManager()
 
     def get_messages(self, single_message_mode=False):
         if not self.messages:
@@ -55,6 +57,7 @@ class ModelConversation:
         use_metadata: bool = False,
         use_tools: bool = False,
         use_reflections: bool = False,
+        use_knowledge: bool = False,
     ):
         messages = self.get_messages(single_message_mode)
 
@@ -71,6 +74,14 @@ class ModelConversation:
             self.handle_tool_use(model, max_tokens, messages, use_metadata=use_metadata)
 
             self.write_to_history("RESPONSE AFTER TOOLS", model, messages, use_metadata)
+
+        if use_knowledge and messages:
+            new_message = self.handle_knowledge(messages[-1])
+            messages[-1] = new_message
+
+            self.write_to_history(
+                "RESPONSE AFTER KNOWLEDGE", model, messages, use_metadata
+            )
 
         response = model.generate_text(messages, max_tokens, use_metadata=use_metadata)
 
@@ -150,6 +161,24 @@ class ModelConversation:
 
         if output and output != JSON_ERROR_MESSAGE:
             messages[-1].append_content(f"(Information to the model, {output})")
+
+    def handle_knowledge(self, message: ModelMessage):
+        formatted_documents = []
+
+        for i, document in enumerate(
+            self.memory_manager.get_most_relevant_documents(message, 3)
+        ):
+            formatted_documents.append(f"{i+1}. {document}")
+
+        if formatted_documents:
+            formatted_document_message = "\n".join(formatted_documents)
+            return ModelMessage(
+                Role.USER,
+                f"(In your knowledge base are the following pieces of information: {formatted_document_message})\n\n{message.get_content()}",
+                message.get_metadata(),
+            )
+        else:
+            return message
 
     def write_to_history(
         self,

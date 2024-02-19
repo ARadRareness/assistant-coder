@@ -13,12 +13,14 @@ class Model:
         use_tools: bool = False,
         use_reflections: bool = False,
         use_suggestions: bool = False,
+        use_knowledge: bool = False,
     ):
         self.conversation_id = start_conversation()
         self.single_message_mode = single_message_mode
         self.use_tools = use_tools
         self.use_reflections = use_reflections
         self.use_suggestions = use_suggestions
+        self.use_knowledge = use_knowledge
 
     def add_system_message(self, message: str):
         return add_system_message(self.conversation_id, message)
@@ -54,6 +56,7 @@ class Model:
             use_tools=self.use_tools,
             use_reflections=self.use_reflections,
             use_suggestions=self.use_suggestions,
+            use_knowledge=self.use_knowledge,
         )
 
 
@@ -177,6 +180,7 @@ def generate_response(
     use_tools: bool = False,
     use_reflections: bool = False,
     use_suggestions: bool = False,
+    use_knowledge: bool = False,
 ):
     payload = {
         "conversation_id": conversation_id,
@@ -188,6 +192,7 @@ def generate_response(
         "use_tools": use_tools == True,
         "use_reflections": use_reflections == True,
         "use_suggestions": use_suggestions == True,
+        "use_knowledge": use_knowledge == True,
     }
 
     response = requests.post(f"{BASE_URL}/generate_response", json=payload)

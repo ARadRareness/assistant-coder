@@ -22,4 +22,4 @@ class FAISS:
 
         d, i = self.index.search(query_vector, k)
 
-        return tuple(self.documents[num] for num in i[0])
+        return tuple(self.documents[num] for num in filter(lambda x: x != -1, i[0]))

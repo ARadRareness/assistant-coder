@@ -50,3 +50,20 @@ class TestConversations(TestBase):
             response,
             "The response contains a greeting or status update",
         )
+
+    @run_multiple_times
+    def test_knowledge_retrieval(self):
+        model = Model(
+            single_message_mode=False,
+            use_tools=False,
+            use_reflections=False,
+            use_suggestions=False,
+            use_knowledge=True,
+        )
+        self.add_system_message(model)
+
+        response = model.generate_response("What is the secret code?")
+        self.assert_response_is_about(
+            response,
+            "The response contains the code 4512",
+        )

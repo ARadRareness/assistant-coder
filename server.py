@@ -184,6 +184,7 @@ def generate_response():
         use_tools = data.get("use_tools")
         use_reflections = data.get("use_reflections")
         use_suggestions = data.get("use_suggestions")
+        use_knowledge = data.get("use_knowledge")
 
         timestamp = datetime.datetime.now()
         selected_files = data.get("selected_files")
@@ -205,6 +206,7 @@ def generate_response():
             use_metadata=True,
             use_tools=use_tools,
             use_reflections=use_reflections,
+            use_knowledge=use_knowledge,
         )
 
         if use_suggestions:
