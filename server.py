@@ -4,6 +4,7 @@ import sys
 from typing import Dict
 from flask import Flask, jsonify, request
 import uuid
+from language_models.memory_manager import MemoryManager
 
 from language_models.model_conversation import ModelConversation
 from language_models.model_manager import ModelManager
@@ -14,12 +15,13 @@ app = Flask(__name__)
 conversations: Dict[str, ModelConversation] = {}
 
 model_manager: ModelManager = None
+memory_manager: MemoryManager = MemoryManager()
 
 
 @app.route("/start_new_conversation", methods=["GET"])
 def start_conversation():
     conversation_id = str(uuid.uuid4())
-    conversations[conversation_id] = ModelConversation()
+    conversations[conversation_id] = ModelConversation(memory_manager)
     return jsonify({"conversation_id": conversation_id})
 
 
