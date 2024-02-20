@@ -5,13 +5,15 @@ from language_models.vector_stores.faiss import FAISS
 
 
 class test_faiss(unittest.TestCase):
-    def test_faiss(self):
+    def test_faiss_add_documents(self):
         embedding_model = AngleEmbeddingModel()
 
         documents = (
             "This is a recipe",
             "This is a test document",
             "This is a test movie",
+            "This is a test song",
+            "This is a test book",
         )
 
         faiss = FAISS(embedding_model)

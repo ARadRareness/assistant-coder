@@ -26,7 +26,7 @@ class SearchTool(BaseTool):
                 results = ["SEARCH RESULTS FOR QUERY: " + search_query + "\n\n"]
                 for r in search_engine.text(search_query, max_results=5):
                     results.append(
-                        f"<ENTRY><TITLE>{r['title']}</TITLE>\n<URL>{r['href']}</URL>\n<DESCRIPTION>{r['body']}<DESCRIPTION></ENTRY>\n"
+                        f"<ENTRY><TITLE>{r['title']}</TITLE>\n<URL>{r['href']}</URL>\n<DESCRIPTION>{r['body']}</DESCRIPTION></ENTRY>\n"
                     )
 
                 return "\n".join(results)

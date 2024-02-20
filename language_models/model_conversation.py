@@ -11,10 +11,10 @@ from language_models.tool_manager import ToolManager
 
 class ModelConversation:
     def __init__(self, memory_manager, single_message_mode=False):
-        self.messages = []
-        self.single_message_mode = single_message_mode
-        self.tool_manager = ToolManager()
-        self.memory_manager = memory_manager
+        self.messages: List[ModelMessage] = []
+        self.single_message_mode: bool = single_message_mode
+        self.tool_manager: ToolManager = ToolManager()
+        self.memory_manager: MemoryManager = memory_manager
 
     def get_messages(self, single_message_mode=False):
         if not self.messages:
@@ -164,6 +164,8 @@ class ModelConversation:
 
     def handle_knowledge(self, message: ModelMessage):
         formatted_documents = []
+
+        self.memory_manager.refresh_memory()
 
         for i, document in enumerate(
             self.memory_manager.get_most_relevant_documents(message, 3)

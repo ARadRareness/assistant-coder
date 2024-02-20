@@ -7,19 +7,32 @@ class MemoryManager:
     def __init__(self):
         self.embedding_model = AngleEmbeddingModel()
         self.vector_store = FAISS(self.embedding_model)
-        self.load_all_documents()
+        self.refresh_memory()
 
-    def load_all_documents(self):
+    def refresh_memory(self):
+        reload_documents = False
+
+        for document in self.read_knowledge_base():
+            if not self.vector_store.has_document(document):
+                reload_documents = True
+                break
+
+        if reload_documents:
+            self.vector_store = FAISS(self.embedding_model)
+            self.load_all_documents(self.read_knowledge_base())
+
+    def load_all_documents(self, documents):
+        for document in documents:
+            self.vector_store.add_document(document)
+
+    def read_knowledge_base(self):
         if os.path.exists("knowledge_base"):
             for file in os.listdir("knowledge_base"):
                 with open(f"knowledge_base/{file}", "r", encoding="utf8") as f:
                     content = f.read()
 
                     if content:
-                        self.vector_store.add_document(content)
-
-    def add_document(self, document):
-        self.vector_store.add_document(document)
+                        yield content
 
     def get_most_relevant_documents(self, query, number_of_documents):
         return self.vector_store.search(query, number_of_documents)
