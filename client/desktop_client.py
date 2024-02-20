@@ -161,6 +161,11 @@ class AssistantCoder(QMainWindow):
         self.use_suggestions_action = self.add_checkable_menu_action(
             "Use suggestions", window_menu, options_menu, checked_by_default=False
         )
+
+        self.use_knowledge_action = self.add_checkable_menu_action(
+            "Use knowledge", window_menu, options_menu, checked_by_default=False
+        )
+
         window_menu.addSeparator()
         options_menu.addSeparator()
 
@@ -563,6 +568,7 @@ class MessageSender(QObject):
         use_tools = self._parent.use_tools_action.isChecked()
         use_reflections = self._parent.use_reflections_action.isChecked()
         use_suggestions = self._parent.use_suggestions_action.isChecked()
+        use_knowledge = self._parent.use_knowledge_action.isChecked()
 
         def generate_response_thread():
             suggestions = []
@@ -577,6 +583,7 @@ class MessageSender(QObject):
                             use_tools=use_tools,
                             use_reflections=use_reflections,
                             use_suggestions=use_suggestions,
+                            use_knowledge=use_knowledge,
                             max_tokens=1000,
                         )
                         print(suggestions)
@@ -589,6 +596,7 @@ class MessageSender(QObject):
                             use_tools=use_tools,
                             use_reflections=use_reflections,
                             use_suggestions=use_suggestions,
+                            use_knowledge=use_knowledge,
                             max_tokens=1000,
                         )
 

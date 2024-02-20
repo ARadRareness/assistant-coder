@@ -174,7 +174,7 @@ class ModelConversation:
             formatted_document_message = "\n".join(formatted_documents)
             return ModelMessage(
                 Role.USER,
-                f"(In your knowledge base are the following pieces of information: {formatted_document_message})\n\n{message.get_content()}",
+                f"(Your knowledge base contains the following information: {formatted_document_message})\n\n{message.get_content()}",
                 message.get_metadata(),
             )
         else:
