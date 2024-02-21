@@ -58,10 +58,11 @@ class ModelConversation:
         use_tools: bool = False,
         use_reflections: bool = False,
         use_knowledge: bool = False,
+        ask_permission_to_run_tools: bool = False,
     ):
         messages = self.get_messages(single_message_mode)
 
-        metadata = generate_metadata()
+        metadata = generate_metadata(ask_permission_to_run_tools)
 
         self.write_to_history("HISTORY", model, self.messages, use_metadata)
 
@@ -85,9 +86,7 @@ class ModelConversation:
 
         response = model.generate_text(messages, max_tokens, use_metadata=use_metadata)
 
-        self.messages.append(
-            ModelMessage(Role.ASSISTANT, response.get_text(), metadata)
-        )
+        self.add_assistant_message(response.get_text(), metadata)
 
         self.write_to_history("RESPONSE", model, self.messages[-1:], use_metadata)
 
@@ -197,5 +196,5 @@ class ModelConversation:
             file.write("\n\n")
 
 
-def generate_metadata():
-    return MessageMetadata(datetime.datetime.now(), [])
+def generate_metadata(ask_permission_to_run_tools=False):
+    return MessageMetadata(datetime.datetime.now(), [], ask_permission_to_run_tools)

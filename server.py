@@ -187,11 +187,14 @@ def generate_response():
         use_reflections = data.get("use_reflections")
         use_suggestions = data.get("use_suggestions")
         use_knowledge = data.get("use_knowledge")
+        ask_permission_to_run_tools = data.get("ask_permission_to_run_tools")
 
         timestamp = datetime.datetime.now()
         selected_files = data.get("selected_files")
 
-        metadata = MessageMetadata(timestamp, selected_files)
+        metadata = MessageMetadata(
+            timestamp, selected_files, ask_permission_to_run_tools
+        )
 
         if not conversation_id or not user_message:
             raise ValueError("Missing conversation_id or message in the request.")
@@ -209,6 +212,7 @@ def generate_response():
             use_tools=use_tools,
             use_reflections=use_reflections,
             use_knowledge=use_knowledge,
+            ask_permission_to_run_tools=ask_permission_to_run_tools,
         )
 
         if use_suggestions:

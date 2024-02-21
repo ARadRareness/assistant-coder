@@ -8,9 +8,10 @@ class Role(Enum):
 
 
 class MessageMetadata:
-    def __init__(self, timestamp, selected_files):
+    def __init__(self, timestamp, selected_files, ask_permission_to_run_tools=False):
         self.timestamp = timestamp
         self.selected_files = selected_files
+        self.ask_permission_to_run_tools = ask_permission_to_run_tools
 
 
 class ModelMessage:

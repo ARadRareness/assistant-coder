@@ -14,18 +14,21 @@ class ReadFileTool(BaseTool):
                     "(MANDATORY) specifies the index (from 1) of the file to read, only one file is allowed",
                 )
             ],
+            True,
         )
 
+    def ask_permission_message(self, arguments, metadata: MessageMetadata):
+        fpath = self.get_file_argument(arguments, metadata)
+
+        if fpath:
+            return f"AC would like to READ the content of the following file:\n\n{fpath}\n\nDo you want to allow this?"
+        else:
+            return None
+
     def action(self, arguments, metadata: MessageMetadata):
-        if "FILEINDEX" in arguments:
-            file_index = int(arguments["FILEINDEX"])
+        fpath = self.get_file_argument(arguments, metadata)
 
-            if not metadata or 0 >= file_index > len(metadata.selected_files):
-                print("Invalid file index!")
-                return None
-
-            fpath = metadata.selected_files[file_index - 1]
-            print(f"READ FILE with index {file_index}!")
+        if fpath:
             print(f"READ FILE with filepath {fpath}!")
             if os.path.isfile(fpath):
                 with open(fpath, "r", encoding="utf8") as f:
@@ -34,6 +37,18 @@ class ReadFileTool(BaseTool):
                 print("FILE WAS NOT FOUND!")
         else:
             print("READ FILE with UNKNOWN ARGUMENTS")
+
+    def get_file_argument(self, arguments, metadata: MessageMetadata):
+        if "FILEINDEX" in arguments:
+            file_index = int(arguments["FILEINDEX"])
+
+            if not metadata or 0 >= file_index > len(metadata.selected_files):
+                print("Invalid file index!")
+                return None
+
+            return metadata.selected_files[file_index - 1]
+
+        return None
 
     def get_example_messages(self):
         return self.get_example_dialogue(

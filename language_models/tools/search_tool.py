@@ -16,11 +16,13 @@ class SearchTool(BaseTool):
                     "the query to search for",
                 )
             ],
+            True,
         )
 
     def action(self, arguments, metadata: MessageMetadata):
-        if "QUERY" in arguments:
-            search_query = arguments["QUERY"]
+        search_query = self.get_search_query_argument(arguments)
+
+        if search_query:
 
             with DDGS() as search_engine:
                 results = ["SEARCH RESULTS FOR QUERY: " + search_query + "\n\n"]
@@ -33,6 +35,19 @@ class SearchTool(BaseTool):
 
         else:
             print("TRIED TO SEARCH WITHOUT QUERY ARGUMENTS")
+
+    def ask_permission_message(self, arguments, metadata: MessageMetadata):
+        query = self.get_search_query_argument(arguments)
+
+        if query:
+            return f"AC would like to search the web for the following query:\n\n{query}\n\nDo you want to allow this?"
+        else:
+            return None
+
+    def get_search_query_argument(self, arguments):
+        if "QUERY" in arguments:
+            return arguments["QUERY"]
+        return None
 
     def get_example_messages(self):
         return self.get_example_dialogue(

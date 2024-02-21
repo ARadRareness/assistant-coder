@@ -585,6 +585,7 @@ class MessageSender(QObject):
                             use_suggestions=use_suggestions,
                             use_knowledge=use_knowledge,
                             max_tokens=1000,
+                            ask_permission_to_run_tools=True,
                         )
                         print(suggestions)
                     else:
@@ -598,6 +599,7 @@ class MessageSender(QObject):
                             use_suggestions=use_suggestions,
                             use_knowledge=use_knowledge,
                             max_tokens=1000,
+                            ask_permission_to_run_tools=True,
                         )
 
                     if not response and i == 0:

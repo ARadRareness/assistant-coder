@@ -181,6 +181,7 @@ def generate_response(
     use_reflections: bool = False,
     use_suggestions: bool = False,
     use_knowledge: bool = False,
+    ask_permission_to_run_tools: bool = False,
 ):
     payload = {
         "conversation_id": conversation_id,
@@ -193,6 +194,7 @@ def generate_response(
         "use_reflections": use_reflections == True,
         "use_suggestions": use_suggestions == True,
         "use_knowledge": use_knowledge == True,
+        "ask_permission_to_run_tools": ask_permission_to_run_tools == True,
     }
 
     response = requests.post(f"{BASE_URL}/generate_response", json=payload)

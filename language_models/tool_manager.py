@@ -1,14 +1,18 @@
 import json
+import tkinter
+from tkinter import messagebox
+from typing import List
 from language_models.constants import JSON_ERROR_MESSAGE
 from language_models.helpers.json_parser import handle_json
 from language_models.helpers.tool_helper import load_available_tools
 from language_models.model_message import MessageMetadata, ModelMessage, Role
 from language_models.model_response import ModelResponse
+from language_models.tools.base_tool import BaseTool
 
 
 class ToolManager:
     def __init__(self):
-        self.tools = load_available_tools()
+        self.tools: List[BaseTool] = load_available_tools()
 
     def get_tool_conversation(self, message: ModelMessage):
         content = "Using the user message and the available tools, reply with what tool and arguments you want to use to solve the problem."
@@ -36,11 +40,11 @@ class ToolManager:
         messages.append(message)
         return messages
 
-    def get_function(self, command):
+    def get_target_tool(self, command):
         target_tool = command["tool"].replace("\\", "")
         for tool in self.tools:
             if target_tool == tool.name:
-                return tool.action
+                return tool
 
         return None
 
@@ -84,12 +88,21 @@ class ToolManager:
             if not "arguments" in command:
                 command["arguments"] = []
 
-            func = self.get_function(command)
+            target_tool = self.get_target_tool(command)
 
             print("COMMAND", command)
 
-            if func:
-                return func(command["arguments"], metadata), handled_text
+            if target_tool:
+                if metadata.ask_permission_to_run_tools:
+                    if target_tool.ask_permission_to_run:
+                        permission_message = target_tool.ask_permission_message(
+                            command["arguments"], metadata
+                        )
+                        if not self.get_user_permission(permission_message):
+                            print(f"User denied permission to run {target_tool.name}")
+                            return None, handled_text
+
+                return target_tool.action(command["arguments"], metadata), handled_text
             else:
                 return None, handled_text
 
@@ -97,3 +110,20 @@ class ToolManager:
             print(f"FAILED TO PARSE: {response_text}")
             print(f"Exception message: {str(e)}")
             return JSON_ERROR_MESSAGE, response_text
+
+    def get_user_permission(self, message):
+        # Create a Tkinter root window
+        root = tkinter.Tk()
+        # root.overrideredirect(1)
+        root.wm_attributes("-topmost", 1)
+        root.withdraw()  # Hide the root window
+
+        # Create a message box
+        result = messagebox.askquestion(
+            "Permission to Run Tool", message, icon="question"
+        )
+
+        root.destroy()
+
+        # Check the result of the message box
+        return result == "yes"
