@@ -112,18 +112,10 @@ class ToolManager:
             return JSON_ERROR_MESSAGE, response_text
 
     def get_user_permission(self, message):
-        # Create a Tkinter root window
-        root = tkinter.Tk()
-        # root.overrideredirect(1)
-        root.wm_attributes("-topmost", 1)
-        root.withdraw()  # Hide the root window
 
-        # Create a message box
-        result = messagebox.askquestion(
-            "Permission to Run Tool", message, icon="question"
+        import subprocess, sys
+
+        result = subprocess.call(
+            [sys.executable, "language_models/helpers/permission_notifier.py", message]
         )
-
-        root.destroy()
-
-        # Check the result of the message box
-        return result == "yes"
+        return result == 0
