@@ -166,6 +166,10 @@ class AssistantCoder(QMainWindow):
             "Use knowledge", window_menu, options_menu, checked_by_default=False
         )
 
+        self.use_safety_action = self.add_checkable_menu_action(
+            "Use safety", window_menu, options_menu, checked_by_default=True
+        )
+
         window_menu.addSeparator()
         options_menu.addSeparator()
 
@@ -569,6 +573,7 @@ class MessageSender(QObject):
         use_reflections = self._parent.use_reflections_action.isChecked()
         use_suggestions = self._parent.use_suggestions_action.isChecked()
         use_knowledge = self._parent.use_knowledge_action.isChecked()
+        use_safety = self._parent.use_safety_action.isChecked()
 
         def generate_response_thread():
             suggestions = []
@@ -585,7 +590,7 @@ class MessageSender(QObject):
                             use_suggestions=use_suggestions,
                             use_knowledge=use_knowledge,
                             max_tokens=1000,
-                            ask_permission_to_run_tools=True,
+                            ask_permission_to_run_tools=use_safety,
                         )
                         print(suggestions)
                     else:
@@ -599,7 +604,7 @@ class MessageSender(QObject):
                             use_suggestions=use_suggestions,
                             use_knowledge=use_knowledge,
                             max_tokens=1000,
-                            ask_permission_to_run_tools=True,
+                            ask_permission_to_run_tools=use_safety,
                         )
 
                     if not response and i == 0:
