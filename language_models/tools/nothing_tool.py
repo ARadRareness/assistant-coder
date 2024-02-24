@@ -1,4 +1,5 @@
-from language_models.model_message import MessageMetadata
+from typing import Any, Dict, List
+from language_models.model_message import MessageMetadata, ModelMessage
 from language_models.tools.base_tool import BaseTool
 
 
@@ -8,12 +9,12 @@ class NothingTool(BaseTool):
             "nothing",
             "if no other tool is applicable, use this tool to do nothing",
             [],
-        ),
+        )
 
-    def action(self, arguments, metadata: MessageMetadata):
-        return None
+    def action(self, arguments: Dict[str, Any], metadata: MessageMetadata) -> str:
+        return ""
 
-    def get_example_messages(self):
+    def get_example_messages(self) -> List[ModelMessage]:
         return self.get_example_dialogue(
             "Say something funny!", '{"tool": "nothing", "arguments": {}}'
         )

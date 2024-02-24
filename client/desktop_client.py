@@ -1,4 +1,5 @@
 import os
+from typing import Any, Callable, List, Optional, Sequence, Set
 
 from PySide6.QtWidgets import (
     QApplication,
@@ -17,28 +18,33 @@ from PySide6.QtWidgets import (
     QSystemTrayIcon,
     QMenu,
     QStyle,
-    QLabel,
     QLineEdit,
-    QPushButton,
-    QVBoxLayout,
     QComboBox,
     QToolButton,
+    QWidget,
 )
 
-from PySide6.QtGui import QTextCursor, QColor, QTextCharFormat, QAction
+
+from PySide6.QtGui import (
+    QTextCursor,
+    QColor,
+    QTextCharFormat,
+    QAction,
+    QKeyEvent,
+)
 
 from PySide6.QtCore import QObject, QDir, Qt, Signal, QSize
 
 from functools import partial
 
-from huggingface_hub import hf_hub_download
+from huggingface_hub import hf_hub_download  # type: ignore
 
 import client_api
 import threading
 
 
 class AssistantCoder(QMainWindow):
-    def __init__(self, app):
+    def __init__(self, app: QApplication):
         super().__init__()
 
         self.app = app
@@ -48,14 +54,14 @@ class AssistantCoder(QMainWindow):
 
         self.conversation_id = client_api.start_conversation()
 
-        self.checked_files = set()
+        self.checked_files: Set[str] = set()
 
-        self.message_sender = MessageSender(self)
+        self.message_sender: MessageSender = MessageSender(self)
         self.message_sender.message_received.connect(
-            lambda message: self.display_message(message, color="darkred")
+            lambda message: self.display_message(message, color="darkred")  # type: ignore
         )
         self.message_sender.suggestions_received.connect(
-            lambda suggestions: self.display_suggestions(suggestions)
+            lambda suggestions: self.display_suggestions(suggestions)  # type: ignore
         )
 
         dark_mode = False
@@ -85,12 +91,14 @@ class AssistantCoder(QMainWindow):
         # )
         self.setCentralWidget(central_widget)
 
-        self.layout = QHBoxLayout(central_widget)
+        self.layout = lambda: QHBoxLayout(central_widget)
+
+        layout = self.layout()
 
         tree_layout = QVBoxLayout()
 
         self.init_treeview(tree_layout)
-        self.layout.addLayout(tree_layout)
+        layout.addLayout(tree_layout)
 
         options_layout = QHBoxLayout()
         tree_layout.addLayout(options_layout)
@@ -115,10 +123,14 @@ class AssistantCoder(QMainWindow):
         chat_layout.addWidget(self.chat_display)
         self.init_command_entry(chat_layout)
 
-        self.layout.addLayout(chat_layout)
+        layout.addLayout(chat_layout)
 
     def add_checkable_menu_action(
-        self, action_text, window_menu, option_menu, checked_by_default=False
+        self,
+        action_text: str,
+        window_menu: QMenu,
+        option_menu: QMenu,
+        checked_by_default: bool = False,
     ):
         action = self.add_menu_action(
             action_text, window_menu, option_menu, checkable=True
@@ -126,10 +138,16 @@ class AssistantCoder(QMainWindow):
         action.setChecked(checked_by_default)
         return action
 
-    def add_menu_action(self, action_text, window_menu, options_menu, checkable=False):
-        action = QAction(action_text, window_menu, checkable=checkable)
-        window_menu.addAction(action)
-        options_menu.addAction(action)
+    def add_menu_action(
+        self,
+        action_text: str,
+        window_menu: QMenu,
+        options_menu: QMenu,
+        checkable: bool = False,
+    ):
+        action = QAction(action_text, window_menu, checkable=checkable)  # type: ignore
+        window_menu.addAction(action)  # type: ignore
+        options_menu.addAction(action)  # type: ignore
         return action
 
     def create_window_and_system_menu(self):
@@ -140,7 +158,7 @@ class AssistantCoder(QMainWindow):
 
         # Create the system tray icon
         self.tray_icon = QSystemTrayIcon()
-        self.tray_icon.setIcon(self.app.style().standardIcon(QStyle.SP_DesktopIcon))
+        self.tray_icon.setIcon(self.app.style().standardIcon(QStyle.SP_DesktopIcon))  # type: ignore
 
         # Create the system tray menu
         self.menu = QMenu()
@@ -201,7 +219,7 @@ class AssistantCoder(QMainWindow):
         # Show the system tray icon
         self.tray_icon.show()
 
-    def init_treeview(self, layout):
+    def init_treeview(self, layout: QVBoxLayout) -> None:
         self.model = CustomFileSystemModel()
         self.model.setRootPath(QDir.rootPath())
 
@@ -219,7 +237,7 @@ class AssistantCoder(QMainWindow):
 
         layout.addWidget(self.tree_view)
 
-    def tree_state_changed(self, path, checked):
+    def tree_state_changed(self, path: str, checked: bool) -> None:
         if checked:
             if os.path.isfile(path):
                 self.checked_files.add(path)
@@ -227,9 +245,9 @@ class AssistantCoder(QMainWindow):
             try:
                 self.checked_files.remove(path)
             except:
-                None
+                pass
 
-    def init_command_entry(self, layout):
+    def init_command_entry(self, layout: QVBoxLayout):
         command_label = QLabel("Command:", self)
         layout.addWidget(command_label)
 
@@ -237,10 +255,10 @@ class AssistantCoder(QMainWindow):
         # self.command.returnPressed.connect(self.execute_command)
         layout.addWidget(self.command)
 
-    def display_message(self, message, color=None):
+    def display_message(self, message: str, color: Optional[str] = None) -> None:
         # Scroll to the bottom to always show the latest messages
         cursor = self.chat_display.textCursor()
-        cursor.movePosition(QTextCursor.End)
+        cursor.movePosition(QTextCursor.End)  # type: ignore
 
         # Create a new text block for the message
         cursor.insertBlock()
@@ -261,54 +279,56 @@ class AssistantCoder(QMainWindow):
             cursor.setCharFormat(format)
 
         self.chat_display.setTextCursor(cursor)
-        cursor.movePosition(QTextCursor.End)
+        cursor.movePosition(QTextCursor.End)  # type: ignore
 
-    def display_suggestions(self, suggestions):
+    def display_suggestions(self, suggestions: Sequence[str]) -> None:
         # Display suggestions in a separate pop-up window, where the user can click on a suggestion to send it as a command
         self.suggestions_dialog.set_suggestions(suggestions)
         self.suggestions_dialog.show()
 
-    def populate_tree(self, directory, parent_index):
-        model = self.centralWidget().layout().itemAt(0).widget().model()
-        item_index = model.index(directory)
-        model.insertRow(0, item_index.parent())
+    def populate_tree(self, directory: str, parent_index: int):
+        model: CustomFileSystemModel = self.centralWidget().layout().itemAt(0).widget().model()  # type: ignore
+        item_index = model.index(directory)  # type: ignore
+        model.insertRow(0, item_index.parent())  # type: ignore
 
         for item_name in os.listdir(directory):
             item_path = os.path.join(directory, item_name)
 
             # Insert the item into the tree
-            item_index = model.index(item_path)
-            model.insertRow(0, item_index.parent())
+            item_index: int = model.index(item_path)  # type: ignore
+            model.insertRow(0, item_index.parent())  # type: ignore
 
             # If it's a directory, make a recursive call to populate its children
             if os.path.isdir(item_path):
                 self.populate_tree(item_path, item_index)
 
-    def item_selected(self, index):
-        file_path = (
-            self.centralWidget().layout().itemAt(0).widget().model().filePath(index)
+    def item_selected(self, index: int) -> None:
+        model: CustomFileSystemModel = (  # type: ignore
+            self.centralWidget().layout().itemAt(0).widget().model()  # type: ignore
         )
-        self.file_clicked(file_path)
+        file_path: str = model.filePath(index)  # type: ignore
 
-    def file_clicked(self, file_path):
+        self.file_clicked(file_path)  # type: ignore
+
+    def file_clicked(self, file_path: str):
         print("File clicked:", file_path)
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event: QKeyEvent) -> None:
         # Override the keyPressEvent to capture Enter key press
-        if event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
+        if event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:  # type: ignore
             self.focus_command_input()
         else:
             super().keyPressEvent(event)
 
-    def focus_command_input(self):
+    def focus_command_input(self) -> None:
         self.command.setFocus()
 
-    def send_command(self, command):
+    def send_command(self, command: str) -> None:
         print("Sending command:", command)
         self.display_message("User: " + command, color="darkblue")
         self.message_sender.send_message(command)
 
-    def execute_command(self):
+    def execute_command(self) -> None:
         command = self.command.toPlainText().strip()
         self.command.clear()
 
@@ -345,15 +365,15 @@ class AssistantCoder(QMainWindow):
 
     def download_model(self):
         dialog = DownloadModelDialog(self)
-        if dialog.exec() == QDialog.Accepted:
-            None
+        if dialog.exec() == QDialog.Accepted:  # type: ignore
+            pass
 
     def change_model(self):
         dialog = ChangeModelDialog(self)
-        if dialog.exec() == QDialog.Accepted:
+        if dialog.exec() == QDialog.Accepted:  # type: ignore
             self.add_system_message()
 
-    def download_method(self, repo_id, filename):
+    def download_method(self, repo_id: str, filename: str):
         print(f"Downloading model from {repo_id} with name {filename}")
 
         model_dir_paths = ["models", os.path.join("..", "models")]
@@ -362,10 +382,9 @@ class AssistantCoder(QMainWindow):
             if os.path.exists(model_dir_path):
                 model_path = os.path.join(model_dir_path, filename)
                 if not os.path.exists(model_path):
-                    downloaded_model_path = hf_hub_download(
+                    downloaded_model_path = hf_hub_download(  # type: ignore
                         repo_id=repo_id,
                         filename=filename,
-                        use_auth_token=False,
                     )
 
                     # Move the downloaded model to the models folder
@@ -374,7 +393,7 @@ class AssistantCoder(QMainWindow):
 
 
 class DownloadModelDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent: AssistantCoder):
         super().__init__(parent)
         self.setWindowTitle("Download Model")
 
@@ -401,16 +420,20 @@ class DownloadModelDialog(QDialog):
         layout.addWidget(self.cancel_button)
         self.setLayout(layout)
 
+        self.assistant_coder = parent
+
     def download(self):
         # Retrieve the values from the line edits and trigger the download method
         repo_id = self.repo_id_edit.text()
         filename = self.filename_edit.text()
         self.accept()  # Close the dialog
-        self.parent().download_method(repo_id, filename)  # Call the download method
+        self.assistant_coder.download_method(
+            repo_id, filename
+        )  # Call the download method
 
 
 class ChangeModelDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[AssistantCoder] = None):
         super().__init__(parent)
         self.setWindowTitle("Change Model")
 
@@ -453,119 +476,124 @@ class CustomFileSystemModel(QFileSystemModel):
     def __init__(self):
         super().__init__()
         self.checkStates = {}
-        self.rowsInserted.connect(self.checkAdded)
-        self.rowsRemoved.connect(self.checkParent)
-        self.rowsAboutToBeRemoved.connect(self.checkRemoved)
+        self.rowsInserted.connect(self.checkAdded)  # type: ignore
+        self.rowsRemoved.connect(self.checkParent)  # type: ignore
+        self.rowsAboutToBeRemoved.connect(self.checkRemoved)  # type: ignore
 
-    def checkState(self, index):
-        return self.checkStates.get(self.filePath(index), Qt.Unchecked)
+    def checkState(self, index: int) -> bool:
+        return self.checkStates.get(self.filePath(index), Qt.Unchecked)  # type: ignore
 
-    def setCheckState(self, index, state, emitStateChange=True):
-        path = self.filePath(index)
-        if self.checkStates.get(path) == state:
+    def setCheckState(self, index, state, emitStateChange=True):  # type: ignore
+        path = self.filePath(index)  # type: ignore
+        if self.checkStates.get(path) == state:  # type: ignore
             return
-        self.checkStates[path] = state
+        self.checkStates[path] = state  # type: ignore
         if emitStateChange:
-            self.checkStateChanged.emit(path, bool(state))
+            self.checkStateChanged.emit(path, bool(state))  # type: ignore
 
-    def checkAdded(self, parent, first, last):
+    def checkAdded(self, parent, first, last):  # type: ignore
         # if a file/directory is added, ensure it follows the parent state as long
         # as the parent is already tracked; note that this happens also when
         # expanding a directory that has not been previously loaded
-        if not parent.isValid():
+        if not parent.isValid():  # type: ignore
             return
 
-        if self.filePath(parent) in self.checkStates:
-            state = self.checkState(parent)
-            for row in range(first, last + 1):
-                index = self.index(row, 0, parent)
+        if self.filePath(parent) in self.checkStates:  # type: ignore
+            state = self.checkState(parent)  # type: ignore
+            for row in range(first, last + 1):  # type: ignore
+                index = self.index(row, 0, parent)  # type: ignore
                 path = self.filePath(index)
-                if path not in self.checkStates:
-                    self.checkStates[path] = state
+                if path not in self.checkStates:  # type: ignore
+                    self.checkStates[path] = state  # type: ignore
 
         # self.checkParent(parent)
 
-    def checkRemoved(self, parent, first, last):
+    def checkRemoved(self, parent, first, last):  # type: ignore
         # remove items from the internal dictionary when a file is deleted;
         # note that this *has* to happen *before* the model actually updates,
         # that's the reason this function is connected to rowsAboutToBeRemoved
-        for row in range(first, last + 1):
-            path = self.filePath(self.index(row, 0, parent))
-            if path in self.checkStates:
-                self.checkStates.pop(path)
+        for row in range(first, last + 1):  # type: ignore
+            path = self.filePath(self.index(row, 0, parent))  # type: ignore
+            if path in self.checkStates:  # type: ignore
+                self.checkStates.pop(path)  # type: ignore
 
-    def checkParent(self, parent):
+    def checkParent(self, parent):  # type: ignore
         # verify the state of the parent according to the children states
-        if not parent.isValid():
+        if not parent.isValid():  # type: ignore
             return
         childStates = [
-            self.checkState(self.index(r, 0, parent))
-            for r in range(self.rowCount(parent))
+            self.checkState(self.index(r, 0, parent))  # type: ignore
+            for r in range(self.rowCount(parent))  # type: ignore
         ]
 
-        newState = Qt.Checked if all(childStates) else Qt.Unchecked
-        oldState = self.checkState(parent)
+        newState = Qt.Checked if all(childStates) else Qt.Unchecked  # type: ignore
+        oldState = self.checkState(parent)  # type: ignore
 
         if newState != oldState:
-            self.setCheckState(parent, newState)
+            self.setCheckState(parent, newState)  # type: ignore
             self.dataChanged.emit(parent, parent)
-        self.checkParent(parent.parent())
+        self.checkParent(parent.parent())  # type: ignore
 
-    def flags(self, index):
-        return super().flags(index) | Qt.ItemIsUserCheckable
+    def flags(self, index):  # type: ignore
+        return super().flags(index) | Qt.ItemIsUserCheckable  # type: ignore
 
-    def data(self, index, role=Qt.DisplayRole):
-        if role == Qt.CheckStateRole and index.column() == 0:
-            return self.checkState(index)
+    def data(self, index, role=Qt.DisplayRole):  # type: ignore
+        if role == Qt.CheckStateRole and index.column() == 0:  # type: ignore
+            return self.checkState(index)  # type: ignore
         return super().data(index, role)
 
-    def setData(self, index, value, role, checkParent=True, emitStateChange=True):
-        if role == Qt.CheckStateRole and index.column() == 0:
-            self.setCheckState(index, value, emitStateChange)
+    def setData(self, index, value, role, checkParent=True, emitStateChange=True):  # type: ignore
+        if role == Qt.CheckStateRole and index.column() == 0:  # type: ignore
+            self.setCheckState(index, value, emitStateChange)  # type: ignore
 
-            for row in range(self.rowCount(index)):
+            for row in range(self.rowCount(index)):  # type: ignore
                 # set the data for the children, but do not emit the state change,
                 # and don't check the parent state (to avoid recursion)
-                child_index = self.index(row, 0, index)
-                self.setData(
+                child_index = self.index(row, 0, index)  # type: ignore
+                self.setData(  # type: ignore
                     child_index,
-                    value,
-                    Qt.CheckStateRole,
+                    value,  # type: ignore
+                    Qt.CheckStateRole,  # type: ignore
                     checkParent=False,
                     emitStateChange=False,
                 )
             self.dataChanged.emit(index, index)
             if checkParent:
-                self.checkParent(index.parent())
+                self.checkParent(index.parent())  # type: ignore
             return True
 
-        return super().setData(index, value, role)
+        return super().setData(index, value, role)  # type: ignore
 
 
 class CommandTextEdit(QTextEdit):
-    def __init__(self, parent=None, command_execution=None):
+    def __init__(
+        self,
+        parent: Optional[AssistantCoder] = None,
+        command_execution: Optional[Callable[[], Any]] = None,
+    ):
         super().__init__(parent)
         self.command_execution = command_execution
-        self.setMaximumHeight(self.document().size().height() * 3)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.setMaximumHeight(int(self.document().size().height() * 3))
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)  # type: ignore
 
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Return and not event.modifiers() == Qt.ShiftModifier:
+    def keyPressEvent(self, e: QKeyEvent):
+        if e.key() == Qt.Key_Return and not e.modifiers() == Qt.ShiftModifier:  # type: ignore
             # Enter without Shift pressed, execute the command
-            self.command_execution()
+            if self.command_execution:
+                self.command_execution()
         else:
-            super().keyPressEvent(event)
+            super().keyPressEvent(e)
 
 
 class MessageSender(QObject):
     message_received = Signal(str)
     suggestions_received = Signal(list)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: AssistantCoder):
         super().__init__(parent)
         self._parent = parent
 
-    def send_message(self, command):
+    def send_message(self, command: str):
         selected_files = list(self._parent.checked_files)
 
         chat_mode = self._parent.chat_mode_action.isChecked()
@@ -577,20 +605,22 @@ class MessageSender(QObject):
 
         def generate_response_thread():
             suggestions = []
+            response = None
             try:
                 for i in range(2):
                     if use_suggestions:
-                        response, suggestions = client_api.generate_response(
-                            self._parent.conversation_id,
-                            command,
-                            selected_files=selected_files,
-                            single_message_mode=not chat_mode,
-                            use_tools=use_tools,
-                            use_reflections=use_reflections,
-                            use_suggestions=use_suggestions,
-                            use_knowledge=use_knowledge,
-                            max_tokens=1000,
-                            ask_permission_to_run_tools=use_safety,
+                        response, suggestions = (
+                            client_api.generate_response_with_suggestions(
+                                self._parent.conversation_id,
+                                command,
+                                selected_files=selected_files,
+                                single_message_mode=not chat_mode,
+                                use_tools=use_tools,
+                                use_reflections=use_reflections,
+                                use_knowledge=use_knowledge,
+                                max_tokens=1000,
+                                ask_permission_to_run_tools=use_safety,
+                            )
                         )
                         print(suggestions)
                     else:
@@ -601,7 +631,6 @@ class MessageSender(QObject):
                             single_message_mode=not chat_mode,
                             use_tools=use_tools,
                             use_reflections=use_reflections,
-                            use_suggestions=use_suggestions,
                             use_knowledge=use_knowledge,
                             max_tokens=1000,
                             ask_permission_to_run_tools=use_safety,
@@ -629,7 +658,9 @@ class MessageSender(QObject):
 
 
 class SuggestionsDialog(QDialog):
-    def __init__(self, send_command, parent=None):
+    def __init__(
+        self, send_command: Callable[[str], None], parent: Optional[QWidget] = None
+    ):
         super().__init__(parent)
         self.setWindowTitle("Suggestions")
         self.suggestions = []  # suggestions
@@ -637,22 +668,23 @@ class SuggestionsDialog(QDialog):
         self.send_command = send_command
         self.buttons = []
 
-    def set_suggestions(self, suggestions):
+    def set_suggestions(self, suggestions: Sequence[str]) -> None:
         self.suggestions = suggestions
 
         # Remove previous widgets from self.layout
-        for i in reversed(range(self.layout.count())):
-            self.layout.itemAt(i).widget().setParent(None)
+        for i in reversed(range(self.layout_actual.count())):
+            self.layout_actual.itemAt(i).widget().setParent(None)
 
         for suggestion in self.suggestions:
-            button = QToolButton(self)
-            button.setText(self.split_suggestion(suggestion))
-            button.clicked.connect(partial(self.send, suggestion))
-            self.layout.addWidget(button)
+            if suggestion:
+                button = QToolButton(self)
+                button.setText(self.split_suggestion(suggestion))
+                button.clicked.connect(partial(self.send, suggestion))
+                self.layout_actual.addWidget(button)
 
-    def split_suggestion(self, suggestion):
+    def split_suggestion(self, suggestion: str) -> str:
         words = suggestion.split()
-        lines = []
+        lines: List[str] = []
         current_line = ""
 
         for word in words:
@@ -667,12 +699,13 @@ class SuggestionsDialog(QDialog):
 
         return "\n".join(lines)
 
-    def send(self, message):
+    def send(self, message: str) -> None:
         self.send_command(message)
 
     def init_ui(self):
-        self.layout = QVBoxLayout()
-        self.setLayout(self.layout)
+        self.layout = lambda: QVBoxLayout()
+        self.layout_actual = self.layout()
+        self.setLayout(self.layout_actual)
 
 
 if __name__ == "__main__":

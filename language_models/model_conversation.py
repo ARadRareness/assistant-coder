@@ -1,7 +1,7 @@
 import datetime
-from typing import List
+from typing import List, Optional, Sequence
 
-from language_models.api.base import Model
+from language_models.api.base import ApiModel
 from language_models.constants import JSON_ERROR_MESSAGE, JSON_PARSE_RETRY_COUNT
 from language_models.helpers.json_parser import parse_json
 from language_models.memory_manager import MemoryManager
@@ -10,18 +10,20 @@ from language_models.tool_manager import ToolManager
 
 
 class ModelConversation:
-    def __init__(self, memory_manager, single_message_mode=False):
+    def __init__(
+        self, memory_manager: MemoryManager, single_message_mode: bool = False
+    ):
         self.messages: List[ModelMessage] = []
         self.single_message_mode: bool = single_message_mode
         self.tool_manager: ToolManager = ToolManager()
         self.memory_manager: MemoryManager = memory_manager
 
-    def get_messages(self, single_message_mode=False):
+    def get_messages(self, single_message_mode: bool = False) -> List[ModelMessage]:
         if not self.messages:
             return []
 
         if single_message_mode:
-            messages = []
+            messages: List[ModelMessage] = []
             system_message = None
             for message in self.messages:
                 if message.is_system_message():
@@ -51,7 +53,7 @@ class ModelConversation:
 
     def generate_message(
         self,
-        model: Model,
+        model: ApiModel,
         max_tokens: int,
         single_message_mode: bool,
         use_metadata: bool = False,
@@ -92,7 +94,7 @@ class ModelConversation:
 
         return response.get_text()
 
-    def generate_suggestions(self, model: Model):
+    def generate_suggestions(self, model: ApiModel):
         messages = self.get_messages(single_message_mode=False)
 
         messages.append(
@@ -114,9 +116,9 @@ class ModelConversation:
 
     def handle_reflections(
         self,
-        model: Model,
+        model: ApiModel,
         max_tokens: int,
-        messages: list[ModelMessage],
+        messages: List[ModelMessage],
         use_metadata: bool = False,
     ):
         last_message = messages.pop(-1)
@@ -140,7 +142,7 @@ class ModelConversation:
 
     def handle_tool_use(
         self,
-        model: Model,
+        model: ApiModel,
         max_tokens: int,
         messages: list[ModelMessage],
         use_metadata: bool = False,
@@ -150,6 +152,8 @@ class ModelConversation:
         response = model.generate_text(
             tool_messages, max_tokens=max_tokens, use_metadata=use_metadata
         )
+
+        output: Optional[str] = None
 
         for _ in range(JSON_PARSE_RETRY_COUNT):
             output, _ = self.tool_manager.parse_and_execute(
@@ -162,7 +166,7 @@ class ModelConversation:
             messages[-1].append_content(f"(Information to the model, {output})")
 
     def handle_knowledge(self, message: ModelMessage):
-        formatted_documents = []
+        formatted_documents: List[str] = []
 
         self.memory_manager.refresh_memory()
 
@@ -184,8 +188,8 @@ class ModelConversation:
     def write_to_history(
         self,
         title: str,
-        model: Model,
-        messages: List[ModelMessage],
+        model: ApiModel,
+        messages: Sequence[ModelMessage],
         use_metadata: bool = False,
     ):
         with open("history.log", "a", encoding="utf8") as file:
@@ -196,5 +200,5 @@ class ModelConversation:
             file.write("\n\n")
 
 
-def generate_metadata(ask_permission_to_run_tools=False):
+def generate_metadata(ask_permission_to_run_tools: bool = False):
     return MessageMetadata(datetime.datetime.now(), [], ask_permission_to_run_tools)

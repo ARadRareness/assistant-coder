@@ -1,7 +1,8 @@
 import json
+from typing import Any, Dict
 
 
-def handle_json(raw_text: str):
+def handle_json(raw_text: str) -> str:
     level_count = 0
     start_index = -1
     end_index = -1
@@ -19,6 +20,6 @@ def handle_json(raw_text: str):
     return raw_text[start_index:end_index]
 
 
-def parse_json(raw_text: str):
+def parse_json(raw_text: str) -> Dict[str, Any]:
     json_text = handle_json(raw_text)
     return json.loads(json_text)

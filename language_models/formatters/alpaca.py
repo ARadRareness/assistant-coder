@@ -1,14 +1,15 @@
-from typing import List
+from typing import Sequence
 from language_models.formatters.base import PromptFormatter
 from language_models.model_message import ModelMessage
 
 
 class AlpacaFormatter(PromptFormatter):
     def __init__(self):
-        super().__init__()
-        self.model_type = "ALPACA"
+        super().__init__("ALPACA")
 
-    def generate_prompt(self, messages: List[ModelMessage], use_metadata: bool = False):
+    def generate_prompt(
+        self, messages: Sequence[ModelMessage], use_metadata: bool = False
+    ) -> str:
         prompt = ""
 
         for message in messages:

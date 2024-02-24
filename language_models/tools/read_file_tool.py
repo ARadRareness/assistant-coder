@@ -1,5 +1,6 @@
 import os
-from language_models.model_message import MessageMetadata
+from typing import Any, Dict, List
+from language_models.model_message import MessageMetadata, ModelMessage
 from language_models.tools.base_tool import BaseTool
 
 
@@ -17,16 +18,18 @@ class ReadFileTool(BaseTool):
             True,
         )
 
-    def ask_permission_message(self, arguments, metadata: MessageMetadata):
-        fpath = self.get_file_argument(arguments, metadata)
+    def ask_permission_message(
+        self, arguments: Dict[str, Any], metadata: MessageMetadata
+    ) -> str:
+        fpath = self._get_file_argument(arguments, metadata)
 
         if fpath:
             return f"AC would like to READ the content of the following file:\n\n{fpath}\n\nDo you want to allow this?"
         else:
-            return None
+            return ""
 
-    def action(self, arguments, metadata: MessageMetadata):
-        fpath = self.get_file_argument(arguments, metadata)
+    def action(self, arguments: Dict[str, Any], metadata: MessageMetadata) -> str:
+        fpath = self._get_file_argument(arguments, metadata)
 
         if fpath:
             print(f"READ FILE with filepath {fpath}!")
@@ -38,19 +41,23 @@ class ReadFileTool(BaseTool):
         else:
             print("READ FILE with UNKNOWN ARGUMENTS")
 
-    def get_file_argument(self, arguments, metadata: MessageMetadata):
+        return ""
+
+    def _get_file_argument(
+        self, arguments: Dict[str, Any], metadata: MessageMetadata
+    ) -> str:
         if "FILEINDEX" in arguments:
             file_index = int(arguments["FILEINDEX"])
 
             if not metadata or 0 >= file_index > len(metadata.selected_files):
                 print("Invalid file index!")
-                return None
+                return ""
 
             return metadata.selected_files[file_index - 1]
 
-        return None
+        return ""
 
-    def get_example_messages(self):
+    def get_example_messages(self) -> List[ModelMessage]:
         return self.get_example_dialogue(
             "Read the content of the selected file for me please.",
             '{"tool": "read_file", "arguments": {"FILEINDEX": "1"}}',

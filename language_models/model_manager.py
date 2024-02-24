@@ -1,5 +1,7 @@
 import os
 import subprocess
+from typing import List
+from language_models.api.base import ApiModel
 
 from language_models.api.llamacpp import LlamaCppModel
 from language_models.formatters.alpaca import AlpacaFormatter
@@ -10,18 +12,18 @@ from language_models.formatters.orca_hashes import OrcaHashesFormatter
 
 
 class ModelManager:
-    def __init__(self, llama_cpp_path, start_port):
+    def __init__(self, llama_cpp_path: str, start_port: int):
         self.llama_cpp_path = llama_cpp_path
         self.start_port = start_port
         self.popen = None
         self.gpu_layers = 9001
         self.context_window = 2048
-        self.models = []
+        self.models: List[ApiModel] = []
 
     def model_is_loaded(self):
         return self.popen
 
-    def load_model(self, model_index=0):
+    def load_model(self, model_index: int = 0):
         if self.popen:
             # Terminate the existing process
             self.popen.terminate()
@@ -49,9 +51,6 @@ class ModelManager:
                 model_path,
             ],
         )
-
-        #    stdout=subprocess.DEVNULL,
-        #   stderr=subprocess.DEVNULL)
 
         prompt_formatter = self.get_prompt_formatter(available_models[model_index])
         self.models.append(

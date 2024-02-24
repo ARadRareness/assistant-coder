@@ -1,28 +1,35 @@
-from typing import List
+from typing import Any, Dict, Sequence
 import requests
 import json
-from language_models.api.base import Model
+from language_models.api.base import ApiModel
+from language_models.formatters.base import PromptFormatter
 from language_models.model_message import ModelMessage
 
 from language_models.model_response import ModelResponse
 
 
-class OobaboogaModel(Model):
-    def __init__(self, host_url, host_port, prompt_formatter, model_path):
+class OobaboogaModel(ApiModel):
+    def __init__(
+        self,
+        host_url: str,
+        host_port: str,
+        prompt_formatter: PromptFormatter,
+        model_path: str,
+    ):
         super().__init__(host_url, host_port, prompt_formatter, model_path)
 
     def generate_text(
         self,
-        messages: List[ModelMessage],
+        messages: Sequence[ModelMessage],
         max_tokens: int = 200,
         temperature: float = 0.2,
         use_metadata: bool = False,
-    ):
+    ) -> ModelResponse:
         prompt = self.prompt_formatter.generate_prompt(
             messages, use_metadata=use_metadata
         )
 
-        request = {
+        request: Dict[str, Any] = {
             "prompt": prompt,
             "max_new_tokens": max_tokens,
             "do_sample": True,

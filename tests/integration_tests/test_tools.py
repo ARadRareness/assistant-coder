@@ -11,7 +11,7 @@ from tests.integration_tests.test_base import (
 
 class TestTools(TestBase):
 
-    def create_file(self, fname, temp_dir, content):
+    def create_file(self, fname: str, temp_dir: str, content: str):
         temp_file_path = os.path.join(temp_dir, fname)
 
         with open(temp_file_path, "w", encoding="utf8") as fp:

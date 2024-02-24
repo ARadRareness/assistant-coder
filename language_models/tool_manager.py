@@ -1,7 +1,5 @@
-import json
-import tkinter
-from tkinter import messagebox
-from typing import List
+import json, subprocess, sys
+from typing import Dict, Sequence
 from language_models.constants import JSON_ERROR_MESSAGE
 from language_models.helpers.json_parser import handle_json
 from language_models.helpers.tool_helper import load_available_tools
@@ -12,7 +10,7 @@ from language_models.tools.base_tool import BaseTool
 
 class ToolManager:
     def __init__(self):
-        self.tools: List[BaseTool] = load_available_tools()
+        self.tools: Sequence[BaseTool] = load_available_tools()
 
     def get_tool_conversation(self, message: ModelMessage):
         content = "Using the user message and the available tools, reply with what tool and arguments you want to use to solve the problem."
@@ -21,9 +19,10 @@ class ToolManager:
 
         for tool in self.tools:
             content += f"{tool.name} - {tool.description}\n"
-            if tool.arguments:
+            arguments = tool.get_available_arguments()
+            if arguments:
                 content += " AVAILABLE ARGUMENTS\n"
-                for argument in tool.arguments:
+                for argument in arguments:
                     content += f" {argument[0]} - {argument[1]}\n"
             content += "\n"
 
@@ -40,8 +39,8 @@ class ToolManager:
         messages.append(message)
         return messages
 
-    def get_target_tool(self, command):
-        target_tool = command["tool"].replace("\\", "")
+    def get_target_tool(self, command: Dict[str, str]):
+        target_tool: str = command["tool"].replace("\\", "")
         for tool in self.tools:
             if target_tool == tool.name:
                 return tool
@@ -75,6 +74,8 @@ class ToolManager:
         return new_response
 
     def parse_and_execute(self, response: ModelResponse, metadata: MessageMetadata):
+        response_text = ""
+
         try:
             response_text = response.get_text().strip()
             handled_text = handle_json(response_text).replace("\\_", "_")
@@ -98,6 +99,10 @@ class ToolManager:
                         permission_message = target_tool.ask_permission_message(
                             command["arguments"], metadata
                         )
+
+                        if not permission_message:
+                            permission_message = "UNKNOWN PERMISSION MESSAGE"
+
                         if not self.get_user_permission(permission_message):
                             print(f"User denied permission to run {target_tool.name}")
                             return None, handled_text
@@ -111,10 +116,7 @@ class ToolManager:
             print(f"Exception message: {str(e)}")
             return JSON_ERROR_MESSAGE, response_text
 
-    def get_user_permission(self, message):
-
-        import subprocess, sys
-
+    def get_user_permission(self, message: str):
         result = subprocess.call(
             [sys.executable, "language_models/helpers/permission_notifier.py", message]
         )

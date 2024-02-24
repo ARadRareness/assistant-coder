@@ -1,17 +1,18 @@
-from typing import List
+from typing import List, Sequence
 from language_models.formatters.base import PromptFormatter
 from language_models.model_message import ModelMessage
 
 
 class DeepseekCoderFormatter(PromptFormatter):
     def __init__(self):
-        super().__init__()
-        self.model_type = "DEEPSEEK_CODER"
+        super().__init__("DEEPSEEK_CODER")
 
-    def generate_prompt(self, messages: List[ModelMessage], use_metadata: bool = False):
+    def generate_prompt(
+        self, messages: Sequence[ModelMessage], use_metadata: bool = False
+    ) -> str:
         system_message = ""
 
-        instruction_messages = []
+        instruction_messages: List[ModelMessage] = []
 
         for message in messages:
             if message.is_system_message():

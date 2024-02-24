@@ -1,10 +1,11 @@
 import os
+from typing import List, Optional
 
 from language_models.tools.base_tool import BaseTool
 
 
-def load_available_tools(parent_tool_name=None) -> list[BaseTool]:
-    tools = []
+def load_available_tools(parent_tool_name: Optional[str] = None) -> List[BaseTool]:
+    tools: List[BaseTool] = []
 
     # Dynamically load tools from the tools directory
     for file in os.listdir("language_models/tools"):

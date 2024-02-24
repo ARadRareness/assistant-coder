@@ -1,7 +1,7 @@
 import unittest
 
 from language_models.embedding_models.angle_embedding_model import AngleEmbeddingModel
-import sentence_transformers
+import sentence_transformers  # type: ignore
 
 
 class TestAngleEmbeddingModel(unittest.TestCase):
@@ -19,11 +19,11 @@ class TestAngleEmbeddingModel(unittest.TestCase):
         print(len(vectorQuery[0]))
 
         self.assertGreater(
-            sentence_transformers.util.cos_sim(vectorQuery, vectors[1]),
-            sentence_transformers.util.cos_sim(vectorQuery, vectors[0]),
+            sentence_transformers.util.cos_sim(vectorQuery, vectors[1]),  # type: ignore
+            sentence_transformers.util.cos_sim(vectorQuery, vectors[0]),  # type: ignore
         )
 
         self.assertGreater(
-            sentence_transformers.util.cos_sim(vectorQuery, vectors[1]),
-            sentence_transformers.util.cos_sim(vectorQuery, vectors[2]),
+            sentence_transformers.util.cos_sim(vectorQuery, vectors[1]),  # type: ignore
+            sentence_transformers.util.cos_sim(vectorQuery, vectors[2]),  # type: ignore
         )

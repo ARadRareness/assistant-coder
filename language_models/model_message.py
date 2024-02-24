@@ -1,4 +1,6 @@
+from datetime import datetime
 from enum import Enum
+from typing import List, Sequence
 
 
 class Role(Enum):
@@ -8,7 +10,12 @@ class Role(Enum):
 
 
 class MessageMetadata:
-    def __init__(self, timestamp, selected_files, ask_permission_to_run_tools=False):
+    def __init__(
+        self,
+        timestamp: datetime,
+        selected_files: Sequence[str],
+        ask_permission_to_run_tools: bool = False,
+    ):
         self.timestamp = timestamp
         self.selected_files = selected_files
         self.ask_permission_to_run_tools = ask_permission_to_run_tools
@@ -33,7 +40,7 @@ class ModelMessage:
     def get_content(self):
         return self.content
 
-    def get_message(self, use_metadata=False):
+    def get_message(self, use_metadata: bool = False):
         if self.is_user_message() and use_metadata:
             return f"{self.get_metadata_info()}{self.get_content()}"
         else:
@@ -45,7 +52,7 @@ class ModelMessage:
         if self.metadata.selected_files:
             files = ['"' + file + '"' for file in self.metadata.selected_files]
 
-            numbered_list = []
+            numbered_list: List[str] = []
             for i, file in enumerate(files):
                 numbered_list.append(f"{i+1}. {file}")
 
@@ -55,20 +62,20 @@ class ModelMessage:
             info = f"[Metadata info provided with the message, don't write it out unless necessary: {info.strip()}] "
         return info
 
-    def get_role(self):
+    def get_role(self) -> str:
         return self.role.name.lower()
 
-    def get_metadata(self):
+    def get_metadata(self) -> MessageMetadata:
         return self.metadata
 
-    def get_actor_name(self):
+    def get_actor_name(self) -> str:
         return self.actor_name
 
-    def is_system_message(self):
+    def is_system_message(self) -> bool:
         return self.role == Role.SYSTEM
 
-    def is_user_message(self):
+    def is_user_message(self) -> bool:
         return self.role == Role.USER
 
-    def is_assistant_message(self):
+    def is_assistant_message(self) -> bool:
         return self.role == Role.ASSISTANT

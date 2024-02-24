@@ -41,14 +41,25 @@ class TestConversations(TestBase):
             single_message_mode=False,
             use_tools=False,
             use_reflections=False,
-            use_suggestions=True,
         )
         self.add_system_message(model)
 
-        response, suggestions = model.generate_response("Hi, how are you?")
+        response, suggestions = model.generate_response_with_suggestions(
+            "Hi, how are you?"
+        )
         self.assert_response_is_about(
             response,
             "The response contains a greeting or status update",
+        )
+
+        self.assertTrue(
+            suggestions,
+            msg="The suggestions are empty",
+        )
+
+        self.assert_response_is_about(
+            suggestions[0],
+            "The text contains a topic that is a fitting as a follow up on a greeting",
         )
 
     @run_multiple_times
@@ -57,7 +68,6 @@ class TestConversations(TestBase):
             single_message_mode=False,
             use_tools=False,
             use_reflections=False,
-            use_suggestions=False,
             use_knowledge=True,
         )
         self.add_system_message(model)

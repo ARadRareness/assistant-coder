@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional, Sequence, Union
 from language_models.formatters.base import PromptFormatter
 from language_models.model_message import ModelMessage
 
@@ -6,27 +6,16 @@ from language_models.model_message import ModelMessage
 # This formatter seems to not be able to produce reliable results, probably due to <s> not expected to be an ordinary string token
 class MistralFormatter(PromptFormatter):
     def __init__(self):
-        super().__init__()
-        self.model_type = "MISTRAL"
+        super().__init__("MISTRAL")
 
         self.BOS = 1
         self.EOS = 2
 
-    def user_message(self, message, use_metadata, system_message, tool_message):
-        prompt_message = []
-        if system_message:
-            prompt_message.append(system_message)
-        if tool_message:
-            prompt_message.append(tool_message)
-
-        if message:
-            prompt_message.append(message.get_message(use_metadata))
-
-        prompt_message = "\n".join(prompt_message)
-        return f"[INST] {prompt_message} [/INST]"
-
-    def generate_prompt(self, messages: List[ModelMessage], use_metadata: bool = False):
-        prompt = [self.BOS]
+    # returns a list containing ints and strings
+    def generate_prompt(
+        self, messages: Sequence[ModelMessage], use_metadata: bool = False
+    ) -> List[Union[int, str]]:
+        prompt: List[Union[int, str]] = [self.BOS]
 
         system_message = ""
         tool_message = ""
@@ -34,7 +23,7 @@ class MistralFormatter(PromptFormatter):
         for message in messages:
             if message.is_user_message():
                 prompt.append(
-                    self.user_message(
+                    self._user_message(
                         message, use_metadata, system_message, tool_message
                     )
                 )
@@ -48,6 +37,25 @@ class MistralFormatter(PromptFormatter):
 
         if system_message or tool_message:
             prompt.append(
-                self.user_message(None, use_metadata, system_message, tool_message)
+                self._user_message(None, use_metadata, system_message, tool_message)
             )
         return prompt
+
+    def _user_message(
+        self,
+        message: Optional[ModelMessage],
+        use_metadata: bool,
+        system_message: str,
+        tool_message: str,
+    ) -> str:
+        prompt_message_list: List[str] = []
+        if system_message:
+            prompt_message_list.append(system_message)
+        if tool_message:
+            prompt_message_list.append(tool_message)
+
+        if message:
+            prompt_message_list.append(message.get_message(use_metadata))
+
+        prompt_message = "\n".join(prompt_message_list)
+        return f"[INST] {prompt_message} [/INST]"

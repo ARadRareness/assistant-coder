@@ -1,8 +1,8 @@
 import datetime
 import os
 import sys
-from typing import Dict
-from flask import Flask, jsonify, request
+from typing import Dict, List, Optional
+from flask import Flask, Response, jsonify, request
 import uuid
 from language_models.memory_manager import MemoryManager
 
@@ -14,19 +14,19 @@ app = Flask(__name__)
 
 conversations: Dict[str, ModelConversation] = {}
 
-model_manager: ModelManager = None
+model_manager: Optional[ModelManager] = None
 memory_manager: MemoryManager = MemoryManager()
 
 
 @app.route("/start_new_conversation", methods=["GET"])
-def start_conversation():
+def start_conversation() -> Response:
     conversation_id = str(uuid.uuid4())
     conversations[conversation_id] = ModelConversation(memory_manager)
     return jsonify({"conversation_id": conversation_id})
 
 
 @app.route("/add_system_message", methods=["POST"])
-def add_system_message():
+def add_system_message() -> Response:
     try:
         data = request.get_json()
         conversation_id = data.get("conversation_id")
@@ -52,7 +52,7 @@ def add_system_message():
 
 
 @app.route("/add_user_message", methods=["POST"])
-def add_user_message():
+def add_user_message() -> Response:
     try:
         data = request.get_json()
         conversation_id = data.get("conversation_id")
@@ -78,7 +78,7 @@ def add_user_message():
 
 
 @app.route("/add_assistant_message", methods=["POST"])
-def add_assistant_message():
+def add_assistant_message() -> Response:
     try:
         data = request.get_json()
         conversation_id = data.get("conversation_id")
@@ -104,7 +104,7 @@ def add_assistant_message():
 
 
 @app.route("/get_conversation", methods=["GET"])
-def get_conversation():
+def get_conversation() -> Response:
     try:
         conversation_id = request.args.get("conversation_id")
 
@@ -114,7 +114,7 @@ def get_conversation():
         if conversation_id not in conversations:
             raise ValueError(f"Conversation with id {conversation_id} not found.")
 
-        conversation_data = [
+        conversation_data: List[Dict[str, str]] = [
             {"role": message.get_role(), "message": message.get_content()}
             for message in conversations[conversation_id].get_messages()
         ]
@@ -126,7 +126,7 @@ def get_conversation():
 
 
 @app.route("/get_model_info", methods=["GET"])
-def get_model_info():
+def get_model_info() -> Response:
     try:
         conversation_id = request.args.get("conversation_id")
 
@@ -148,12 +148,17 @@ def get_model_info():
 
 
 @app.route("/change_model", methods=["POST"])
-def change_model():
+def change_model() -> Response:
     try:
         data = request.get_json()
         model_name = data.get("model_name")
+
         if not model_name:
             raise ValueError("Missing model_name in the request.")
+
+        if not model_manager:
+            raise ValueError("No model manager found.")
+
         model_manager.change_model(model_name)
         return jsonify({"result": True})
     except Exception as e:
@@ -161,7 +166,7 @@ def change_model():
 
 
 @app.route("/get_available_models", methods=["GET"])
-def get_available_models():
+def get_available_models() -> Response:
     try:
         if model_manager:
             return jsonify(
@@ -176,7 +181,7 @@ def get_available_models():
 
 
 @app.route("/generate_response", methods=["POST"])
-def generate_response():
+def generate_response() -> Response:
     try:
         data = request.get_json()
         conversation_id = data.get("conversation_id")
@@ -204,6 +209,9 @@ def generate_response():
 
         conversations[conversation_id].add_user_message(user_message, metadata)
 
+        if not model_manager:
+            raise ValueError("No model manager found.")
+
         response = conversations[conversation_id].generate_message(
             model_manager.models[0],
             max_tokens,
@@ -216,6 +224,7 @@ def generate_response():
         )
 
         if use_suggestions:
+            suggestions = []
             for _ in range(3):
                 try:
                     suggestions = conversations[conversation_id].generate_suggestions(
@@ -236,7 +245,7 @@ def generate_response():
         return jsonify({"result": False, "error": str(e)})
 
 
-def get_model_manager(mock_llama=False):
+def _get_model_manager(mock_llama: bool = False):
     if mock_llama:
         print("WARNING: Mock Mode")
     else:
@@ -269,7 +278,11 @@ if __name__ == "__main__":
     if mock_llama:
         print("WARNING: Mock Mode")
     else:
-        model_manager = get_model_manager(mock_llama)
+        model_manager = _get_model_manager(mock_llama)
+
+        if not model_manager:
+            print("Error: Model manager not found.")
+            sys.exit(-1)
 
         model_manager.load_model()
 

@@ -1,13 +1,15 @@
-from typing import List
+from typing import List, Sequence, Union
 
 from language_models.model_message import ModelMessage
 
 
 class PromptFormatter:
-    def __init__(self):
-        self.model_type = ""
+    def __init__(self, model_type: str = ""):
+        self.model_type = model_type
 
-    def generate_prompt(self, messages: List[ModelMessage], use_metadata: bool = False):
+    def generate_prompt(
+        self, messages: Sequence[ModelMessage], use_metadata: bool = False
+    ) -> str | List[Union[int, str]]:
         prompt = ""
 
         for message in messages:
