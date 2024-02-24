@@ -5,27 +5,35 @@ from language_models.vector_stores.faiss import FAISS
 
 class MemoryManager:
     def __init__(self):
-        self.embedding_model = AngleEmbeddingModel()
-        self.vector_store = FAISS(self.embedding_model)
-        self.refresh_memory()
+        self.embedding_model = None
+        self.vector_store = None
+
+    def get_most_relevant_documents(self, query, number_of_documents):
+        if not self.vector_store:
+            return []
+        return self.vector_store.search(query, number_of_documents)
 
     def refresh_memory(self):
+        if not self.vector_store:
+            self.embedding_model = AngleEmbeddingModel()
+            self.vector_store = FAISS(self.embedding_model)
+
         reload_documents = False
 
-        for document in self.read_knowledge_base():
+        for document in self._read_knowledge_base():
             if not self.vector_store.has_document(document):
                 reload_documents = True
                 break
 
         if reload_documents:
             self.vector_store = FAISS(self.embedding_model)
-            self.load_all_documents(self.read_knowledge_base())
+            self._load_all_documents(self._read_knowledge_base())
 
-    def load_all_documents(self, documents):
+    def _load_all_documents(self, documents):
         for document in documents:
             self.vector_store.add_document(document)
 
-    def read_knowledge_base(self):
+    def _read_knowledge_base(self):
         if os.path.exists("knowledge_base"):
             for file in os.listdir("knowledge_base"):
                 with open(f"knowledge_base/{file}", "r", encoding="utf8") as f:
@@ -33,6 +41,3 @@ class MemoryManager:
 
                     if content:
                         yield content
-
-    def get_most_relevant_documents(self, query, number_of_documents):
-        return self.vector_store.search(query, number_of_documents)
