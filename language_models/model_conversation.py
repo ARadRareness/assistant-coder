@@ -167,7 +167,7 @@ class ModelConversation:
         self.memory_manager.refresh_memory()
 
         for i, document in enumerate(
-            self.memory_manager.get_most_relevant_documents(message, 3)
+            self.memory_manager.get_most_relevant_documents(message.get_message(), 3)
         ):
             formatted_documents.append(f"{i+1}. {document}")
 
