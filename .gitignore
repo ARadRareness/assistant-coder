@@ -166,3 +166,4 @@ bin
 models
 .vscode
 knowledge_base
+.cursorignore

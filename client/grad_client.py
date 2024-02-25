@@ -1,4 +1,5 @@
-import gradio as gr
+from typing import List
+import gradio as gr  # type: ignore
 
 import client_api
 
@@ -8,7 +9,7 @@ with gr.Blocks() as demo:
     chatbot = gr.Chatbot()
     msg = gr.Textbox(lines=5)
 
-    def respond(message, chat_history):
+    def respond(message: str, chat_history: List[tuple[str, str]]):
         response = client_api.generate_response(conversation_id, message)
 
         chat_history.append((message, response))
@@ -17,8 +18,8 @@ with gr.Blocks() as demo:
     with gr.Row():
         clear = gr.ClearButton([msg, chatbot])
         submit = gr.Button("Submit")
-        submit.click(respond, [msg, chatbot], [msg, chatbot])
+        submit.click(respond, [msg, chatbot], [msg, chatbot])  # type: ignore
 
-    msg.submit(respond, [msg, chatbot], [msg, chatbot])
+    msg.submit(respond, [msg, chatbot], [msg, chatbot])  # type: ignore
 
-demo.launch()
+    demo.launch()  # type: ignore

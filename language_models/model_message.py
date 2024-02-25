@@ -15,10 +15,12 @@ class MessageMetadata:
         timestamp: datetime,
         selected_files: Sequence[str],
         ask_permission_to_run_tools: bool = False,
+        clipboard_content: str = "",
     ):
         self.timestamp = timestamp
         self.selected_files = selected_files
         self.ask_permission_to_run_tools = ask_permission_to_run_tools
+        self.clipboard_content = clipboard_content
 
 
 class ModelMessage:
@@ -34,20 +36,23 @@ class ModelMessage:
         self.metadata = metadata
         self.actor_name = actor_name
 
-    def append_content(self, appended_content: str):
+    def append_content(self, appended_content: str) -> None:
         self.content += f"\n\n{appended_content}"
 
-    def get_content(self):
+    def get_content(self) -> str:
         return self.content
 
-    def get_message(self, use_metadata: bool = False):
+    def get_message(self, use_metadata: bool = False) -> str:
         if self.is_user_message() and use_metadata:
             return f"{self.get_metadata_info()}{self.get_content()}"
         else:
             return self.get_content()
 
-    def get_metadata_info(self):
+    def get_metadata_info(self) -> str:
         info = ""
+
+        if self.metadata.clipboard_content:
+            info += f'The clipboard contains the following text: "{self.metadata.clipboard_content}". '
 
         if self.metadata.selected_files:
             files = ['"' + file + '"' for file in self.metadata.selected_files]

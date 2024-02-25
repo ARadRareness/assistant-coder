@@ -1,5 +1,5 @@
 import json, subprocess, sys
-from typing import Dict, Sequence
+from typing import Dict, Optional, Sequence, Tuple
 from language_models.constants import JSON_ERROR_MESSAGE
 from language_models.helpers.json_parser import handle_json
 from language_models.helpers.tool_helper import load_available_tools
@@ -12,7 +12,7 @@ class ToolManager:
     def __init__(self):
         self.tools: Sequence[BaseTool] = load_available_tools()
 
-    def get_tool_conversation(self, message: ModelMessage):
+    def get_tool_conversation(self, message: ModelMessage) -> Sequence[ModelMessage]:
         content = "Using the user message and the available tools, reply with what tool and arguments you want to use to solve the problem."
 
         content += "Available tools:\n"
@@ -39,7 +39,7 @@ class ToolManager:
         messages.append(message)
         return messages
 
-    def get_target_tool(self, command: Dict[str, str]):
+    def get_target_tool(self, command: Dict[str, str]) -> Optional[BaseTool]:
         target_tool: str = command["tool"].replace("\\", "")
         for tool in self.tools:
             if target_tool == tool.name:
@@ -47,7 +47,7 @@ class ToolManager:
 
         return None
 
-    def add_backslashes(self, response: str):
+    def add_backslashes(self, response: str) -> str:
         """Not so pretty hack to inject backslashes into string
         since json.loads requires 4 backslashes to indicate paths
         and the llm usually only outputs one or two.
@@ -73,7 +73,9 @@ class ToolManager:
 
         return new_response
 
-    def parse_and_execute(self, response: ModelResponse, metadata: MessageMetadata):
+    def parse_and_execute(
+        self, response: ModelResponse, metadata: MessageMetadata
+    ) -> Tuple[str, str]:
         response_text = ""
 
         try:
@@ -105,11 +107,11 @@ class ToolManager:
 
                         if not self.get_user_permission(permission_message):
                             print(f"User denied permission to run {target_tool.name}")
-                            return None, handled_text
+                            return "", handled_text
 
                 return target_tool.action(command["arguments"], metadata), handled_text
             else:
-                return None, handled_text
+                return "", handled_text
 
         except Exception as e:
             print(f"FAILED TO PARSE: {response_text}")

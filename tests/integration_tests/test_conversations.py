@@ -77,3 +77,23 @@ class TestConversations(TestBase):
             response,
             "The response contains the code 4512",
         )
+
+    @run_multiple_times
+    def test_secret_code_in_metadata(self):
+        model = Model(
+            single_message_mode=False,
+            use_tools=False,
+            use_reflections=False,
+            use_knowledge=False,
+        )
+        self.add_system_message(model)
+
+        response = model.generate_response(
+            "What is the secret code?",
+            clipboard_content="My secret code is 4512",
+        )
+
+        self.assert_response_is_about(
+            response,
+            f"The response contains the code 4512",
+        )

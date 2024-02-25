@@ -193,12 +193,13 @@ def generate_response() -> Response:
         use_suggestions = data.get("use_suggestions")
         use_knowledge = data.get("use_knowledge")
         ask_permission_to_run_tools = data.get("ask_permission_to_run_tools")
+        clipboard_content = data.get("clipboard_content")
 
         timestamp = datetime.datetime.now()
         selected_files = data.get("selected_files")
 
         metadata = MessageMetadata(
-            timestamp, selected_files, ask_permission_to_run_tools
+            timestamp, selected_files, ask_permission_to_run_tools, clipboard_content
         )
 
         if not conversation_id or not user_message:

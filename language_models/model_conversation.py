@@ -39,13 +39,13 @@ class ModelConversation:
 
         return self.messages[::]
 
-    def add_user_message(self, content: str, metadata: MessageMetadata):
+    def add_user_message(self, content: str, metadata: MessageMetadata) -> None:
         self.messages.append(ModelMessage(Role.USER, content, metadata))
 
-    def add_assistant_message(self, content: str, metadata: MessageMetadata):
+    def add_assistant_message(self, content: str, metadata: MessageMetadata) -> None:
         self.messages.append(ModelMessage(Role.ASSISTANT, content, metadata))
 
-    def add_system_message(self, content: str, metadata: MessageMetadata):
+    def add_system_message(self, content: str, metadata: MessageMetadata) -> None:
         full_content = (
             "Unless required, answer briefly in a sentence or two.\n" + content
         )
@@ -61,7 +61,7 @@ class ModelConversation:
         use_reflections: bool = False,
         use_knowledge: bool = False,
         ask_permission_to_run_tools: bool = False,
-    ):
+    ) -> str:
         messages = self.get_messages(single_message_mode)
 
         metadata = generate_metadata(ask_permission_to_run_tools)
@@ -94,7 +94,7 @@ class ModelConversation:
 
         return response.get_text()
 
-    def generate_suggestions(self, model: ApiModel):
+    def generate_suggestions(self, model: ApiModel) -> List[str]:
         messages = self.get_messages(single_message_mode=False)
 
         messages.append(
@@ -120,7 +120,7 @@ class ModelConversation:
         max_tokens: int,
         messages: List[ModelMessage],
         use_metadata: bool = False,
-    ):
+    ) -> None:
         last_message = messages.pop(-1)
 
         reflection_prompt_message = ModelMessage(
@@ -146,7 +146,7 @@ class ModelConversation:
         max_tokens: int,
         messages: list[ModelMessage],
         use_metadata: bool = False,
-    ):
+    ) -> None:
         last_message = messages[-1]
         tool_messages = self.tool_manager.get_tool_conversation(last_message)
         response = model.generate_text(
@@ -165,7 +165,7 @@ class ModelConversation:
         if output and output != JSON_ERROR_MESSAGE:
             messages[-1].append_content(f"(Information to the model, {output})")
 
-    def handle_knowledge(self, message: ModelMessage):
+    def handle_knowledge(self, message: ModelMessage) -> ModelMessage:
         formatted_documents: List[str] = []
 
         self.memory_manager.refresh_memory()
@@ -191,7 +191,7 @@ class ModelConversation:
         model: ApiModel,
         messages: Sequence[ModelMessage],
         use_metadata: bool = False,
-    ):
+    ) -> None:
         with open("history.log", "a", encoding="utf8") as file:
             file.write(f"< {title} >\n")
 
@@ -200,5 +200,5 @@ class ModelConversation:
             file.write("\n\n")
 
 
-def generate_metadata(ask_permission_to_run_tools: bool = False):
-    return MessageMetadata(datetime.datetime.now(), [], ask_permission_to_run_tools)
+def generate_metadata(ask_permission_to_run_tools: bool = False) -> MessageMetadata:
+    return MessageMetadata(datetime.datetime.now(), [], ask_permission_to_run_tools, "")

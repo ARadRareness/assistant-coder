@@ -20,10 +20,10 @@ class ModelManager:
         self.context_window = 2048
         self.models: List[ApiModel] = []
 
-    def model_is_loaded(self):
-        return self.popen
+    def model_is_loaded(self) -> bool:
+        return self.popen != None
 
-    def load_model(self, model_index: int = 0):
+    def load_model(self, model_index: int = 0) -> None:
         if self.popen:
             # Terminate the existing process
             self.popen.terminate()
@@ -64,7 +64,7 @@ class ModelManager:
 
         # TODO: Add check whether the process was started successfully or not
 
-    def read_prompt_format(self, model_path: str):
+    def read_prompt_format(self, model_path: str) -> str:
         from gguf import GGUFReader
 
         reader = GGUFReader(model_path, "r+")
@@ -76,8 +76,9 @@ class ModelManager:
             return jinja_template
         else:
             print("No chat template found.")
+            return ""
 
-    def get_prompt_formatter(self, model_path: str):
+    def get_prompt_formatter(self, model_path: str) -> PromptFormatter:
         # TODO: Read model type through metadata rather than name
         if "mistral" in model_path or "mixtral" in model_path:
             return MistralFormatter()
@@ -90,7 +91,7 @@ class ModelManager:
         else:
             return PromptFormatter()
 
-    def change_model(self, model_path: str):
+    def change_model(self, model_path: str) -> None:
         model_index = self.get_available_models().index(model_path)
 
         if model_index == -1:
@@ -99,10 +100,10 @@ class ModelManager:
 
         self.load_model(model_index)
 
-    def get_available_models(self):
+    def get_available_models(self) -> List[str]:
         return list(filter(lambda f: f.endswith(".gguf"), os.listdir("models")))
 
-    def __del__(self):
+    def __del__(self) -> None:
         # Terminate the process if it is still running
         if self.popen:
             self.popen.kill()

@@ -1,5 +1,5 @@
 import os
-from typing import Any, Callable, List, Optional, Sequence, Set
+from typing import Any, Callable, Dict, List, Optional, Sequence, Set
 
 from PySide6.QtWidgets import (
     QApplication,
@@ -31,9 +31,18 @@ from PySide6.QtGui import (
     QTextCharFormat,
     QAction,
     QKeyEvent,
+    QGuiApplication,
 )
 
-from PySide6.QtCore import QObject, QDir, Qt, Signal, QSize
+from PySide6.QtCore import (
+    QObject,
+    QDir,
+    Qt,
+    Signal,
+    QSize,
+    QModelIndex,
+    QPersistentModelIndex,
+)
 
 from functools import partial
 
@@ -186,6 +195,10 @@ class AssistantCoder(QMainWindow):
 
         self.use_safety_action = self.add_checkable_menu_action(
             "Use safety", window_menu, options_menu, checked_by_default=True
+        )
+
+        self.use_clipboard_action = self.add_checkable_menu_action(
+            "Use clipboard", window_menu, options_menu, checked_by_default=False
         )
 
         window_menu.addSeparator()
@@ -475,94 +488,106 @@ class CustomFileSystemModel(QFileSystemModel):
 
     def __init__(self):
         super().__init__()
-        self.checkStates = {}
-        self.rowsInserted.connect(self.checkAdded)  # type: ignore
-        self.rowsRemoved.connect(self.checkParent)  # type: ignore
-        self.rowsAboutToBeRemoved.connect(self.checkRemoved)  # type: ignore
+        self.checkStates: Dict[str, Qt.CheckState] = {}
+        self.rowsInserted.connect(self.checkAdded)
+        self.rowsRemoved.connect(self.checkParent)
+        self.rowsAboutToBeRemoved.connect(self.checkRemoved)
 
-    def checkState(self, index: int) -> bool:
+    def checkState(self, index: QModelIndex | QPersistentModelIndex) -> Qt.CheckState:
         return self.checkStates.get(self.filePath(index), Qt.Unchecked)  # type: ignore
 
-    def setCheckState(self, index, state, emitStateChange=True):  # type: ignore
-        path = self.filePath(index)  # type: ignore
-        if self.checkStates.get(path) == state:  # type: ignore
+    def setCheckState(
+        self,
+        index: QModelIndex | QPersistentModelIndex,
+        state: Qt.CheckState,
+        emitStateChange: bool = True,
+    ) -> None:
+        path = self.filePath(index)
+        if self.checkStates.get(path) == state:
             return
-        self.checkStates[path] = state  # type: ignore
+        self.checkStates[path] = state
         if emitStateChange:
-            self.checkStateChanged.emit(path, bool(state))  # type: ignore
+            self.checkStateChanged.emit(path, bool(state))
 
-    def checkAdded(self, parent, first, last):  # type: ignore
+    def checkAdded(self, parent: QModelIndex, first: int, last: int) -> None:
         # if a file/directory is added, ensure it follows the parent state as long
         # as the parent is already tracked; note that this happens also when
         # expanding a directory that has not been previously loaded
-        if not parent.isValid():  # type: ignore
+        if not parent.isValid():
             return
 
-        if self.filePath(parent) in self.checkStates:  # type: ignore
-            state = self.checkState(parent)  # type: ignore
-            for row in range(first, last + 1):  # type: ignore
-                index = self.index(row, 0, parent)  # type: ignore
+        if self.filePath(parent) in self.checkStates:
+            state = self.checkState(parent)
+            for row in range(first, last + 1):
+                index = self.index(row, 0, parent)
                 path = self.filePath(index)
-                if path not in self.checkStates:  # type: ignore
-                    self.checkStates[path] = state  # type: ignore
+                if path not in self.checkStates:
+                    self.checkStates[path] = state
 
         # self.checkParent(parent)
 
-    def checkRemoved(self, parent, first, last):  # type: ignore
+    def checkRemoved(self, parent: QModelIndex, first: int, last: int) -> None:
         # remove items from the internal dictionary when a file is deleted;
         # note that this *has* to happen *before* the model actually updates,
         # that's the reason this function is connected to rowsAboutToBeRemoved
-        for row in range(first, last + 1):  # type: ignore
-            path = self.filePath(self.index(row, 0, parent))  # type: ignore
-            if path in self.checkStates:  # type: ignore
-                self.checkStates.pop(path)  # type: ignore
+        for row in range(first, last + 1):
+            path = self.filePath(self.index(row, 0, parent))
+            if path in self.checkStates:
+                self.checkStates.pop(path)
 
-    def checkParent(self, parent):  # type: ignore
+    def checkParent(self, parent: QModelIndex) -> None:
         # verify the state of the parent according to the children states
-        if not parent.isValid():  # type: ignore
+        if not parent.isValid():
             return
         childStates = [
-            self.checkState(self.index(r, 0, parent))  # type: ignore
-            for r in range(self.rowCount(parent))  # type: ignore
+            self.checkState(self.index(r, 0, parent))
+            for r in range(self.rowCount(parent))
         ]
 
         newState = Qt.Checked if all(childStates) else Qt.Unchecked  # type: ignore
-        oldState = self.checkState(parent)  # type: ignore
+        oldState = self.checkState(parent)
 
         if newState != oldState:
             self.setCheckState(parent, newState)  # type: ignore
             self.dataChanged.emit(parent, parent)
-        self.checkParent(parent.parent())  # type: ignore
+        self.checkParent(parent.parent())
 
-    def flags(self, index):  # type: ignore
+    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlags:  # type: ignore
         return super().flags(index) | Qt.ItemIsUserCheckable  # type: ignore
 
-    def data(self, index, role=Qt.DisplayRole):  # type: ignore
+    def data(self, index: QModelIndex | QPersistentModelIndex, role=Qt.DisplayRole):  # type: ignore
         if role == Qt.CheckStateRole and index.column() == 0:  # type: ignore
-            return self.checkState(index)  # type: ignore
+            return self.checkState(index)
         return super().data(index, role)
 
-    def setData(self, index, value, role, checkParent=True, emitStateChange=True):  # type: ignore
+    def setData(
+        self,
+        index: QModelIndex | QPersistentModelIndex,
+        value: Any,
+        role: int = 0,
+        checkParent: bool = True,
+        emitStateChange: bool = True,
+    ) -> bool:
         if role == Qt.CheckStateRole and index.column() == 0:  # type: ignore
-            self.setCheckState(index, value, emitStateChange)  # type: ignore
+            self.setCheckState(index, value, emitStateChange)
 
-            for row in range(self.rowCount(index)):  # type: ignore
+            for row in range(self.rowCount(index)):
                 # set the data for the children, but do not emit the state change,
                 # and don't check the parent state (to avoid recursion)
-                child_index = self.index(row, 0, index)  # type: ignore
-                self.setData(  # type: ignore
+                child_index = self.index(row, 0, index)
+                self.setData(
                     child_index,
-                    value,  # type: ignore
+                    value,
                     Qt.CheckStateRole,  # type: ignore
                     checkParent=False,
                     emitStateChange=False,
                 )
             self.dataChanged.emit(index, index)
             if checkParent:
-                self.checkParent(index.parent())  # type: ignore
+                self.checkParent(index.parent())
             return True
 
-        return super().setData(index, value, role)  # type: ignore
+        return super().setData(index, value, role)
 
 
 class CommandTextEdit(QTextEdit):
@@ -602,6 +627,9 @@ class MessageSender(QObject):
         use_suggestions = self._parent.use_suggestions_action.isChecked()
         use_knowledge = self._parent.use_knowledge_action.isChecked()
         use_safety = self._parent.use_safety_action.isChecked()
+        use_clipboard = self._parent.use_clipboard_action.isChecked()
+
+        clipboard_content = QGuiApplication.clipboard().text() if use_clipboard else ""
 
         def generate_response_thread():
             suggestions = []
@@ -620,9 +648,9 @@ class MessageSender(QObject):
                                 use_knowledge=use_knowledge,
                                 max_tokens=1000,
                                 ask_permission_to_run_tools=use_safety,
+                                clipboard_content=clipboard_content,
                             )
                         )
-                        print(suggestions)
                     else:
                         response = client_api.generate_response(
                             self._parent.conversation_id,
@@ -634,6 +662,7 @@ class MessageSender(QObject):
                             use_knowledge=use_knowledge,
                             max_tokens=1000,
                             ask_permission_to_run_tools=use_safety,
+                            clipboard_content=clipboard_content,
                         )
 
                     if not response and i == 0:
@@ -663,13 +692,13 @@ class SuggestionsDialog(QDialog):
     ):
         super().__init__(parent)
         self.setWindowTitle("Suggestions")
-        self.suggestions = []  # suggestions
+        self.suggestions: List[str] = []  # suggestions
         self.init_ui()
         self.send_command = send_command
         self.buttons = []
 
     def set_suggestions(self, suggestions: Sequence[str]) -> None:
-        self.suggestions = suggestions
+        self.suggestions = list(suggestions)
 
         # Remove previous widgets from self.layout
         for i in reversed(range(self.layout_actual.count())):

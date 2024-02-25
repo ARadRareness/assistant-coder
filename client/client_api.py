@@ -13,12 +13,14 @@ class Model:
         use_tools: bool = False,
         use_reflections: bool = False,
         use_knowledge: bool = False,
+        ask_permission_to_run_tools: bool = False,
     ):
         self.conversation_id = start_conversation()
         self.single_message_mode = single_message_mode
         self.use_tools = use_tools
         self.use_reflections = use_reflections
         self.use_knowledge = use_knowledge
+        self.ask_permission_to_run_tools = ask_permission_to_run_tools
 
     def add_system_message(self, message: str):
         return add_system_message(self.conversation_id, message)
@@ -47,6 +49,7 @@ class Model:
         selected_files: Sequence[str] = [],
         max_tokens: int = 200,
         temperature: float = 0.2,
+        clipboard_content: str = "",
     ) -> str:
         return generate_response(
             self.conversation_id,
@@ -58,6 +61,8 @@ class Model:
             use_tools=self.use_tools,
             use_reflections=self.use_reflections,
             use_knowledge=self.use_knowledge,
+            ask_permission_to_run_tools=self.ask_permission_to_run_tools,
+            clipboard_content=clipboard_content,
         )
 
     def generate_response_with_suggestions(
@@ -66,6 +71,7 @@ class Model:
         selected_files: Sequence[str] = [],
         max_tokens: int = 200,
         temperature: float = 0.2,
+        clipboard_content: str = "",
     ) -> Tuple[str, Sequence[str]]:
 
         return generate_response_with_suggestions(
@@ -78,6 +84,8 @@ class Model:
             use_tools=self.use_tools,
             use_reflections=self.use_reflections,
             use_knowledge=self.use_knowledge,
+            ask_permission_to_run_tools=self.ask_permission_to_run_tools,
+            clipboard_content=clipboard_content,
         )
 
 
@@ -202,6 +210,7 @@ def generate_response(
     use_reflections: bool = False,
     use_knowledge: bool = False,
     ask_permission_to_run_tools: bool = False,
+    clipboard_content: str = "",
 ) -> str:
     response = _base_generate_response(
         conversation_id,
@@ -215,6 +224,7 @@ def generate_response(
         use_suggestions=False,
         use_knowledge=use_knowledge,
         ask_permission_to_run_tools=ask_permission_to_run_tools,
+        clipboard_content=clipboard_content,
     )
 
     if response:
@@ -234,6 +244,7 @@ def generate_response_with_suggestions(
     use_reflections: bool = False,
     use_knowledge: bool = False,
     ask_permission_to_run_tools: bool = False,
+    clipboard_content: str = "",
 ) -> Tuple[str, Sequence[str]]:
 
     response = _base_generate_response(
@@ -248,6 +259,7 @@ def generate_response_with_suggestions(
         use_suggestions=True,
         use_knowledge=use_knowledge,
         ask_permission_to_run_tools=ask_permission_to_run_tools,
+        clipboard_content=clipboard_content,
     )
 
     return response
@@ -265,6 +277,7 @@ def _base_generate_response(
     use_suggestions: bool = False,
     use_knowledge: bool = False,
     ask_permission_to_run_tools: bool = False,
+    clipboard_content: str = "",
 ) -> Tuple[str, Sequence[str]]:
     payload = {
         "conversation_id": conversation_id,
@@ -278,6 +291,7 @@ def _base_generate_response(
         "use_suggestions": use_suggestions == True,
         "use_knowledge": use_knowledge == True,
         "ask_permission_to_run_tools": ask_permission_to_run_tools == True,
+        "clipboard_content": clipboard_content,
     }
 
     response = requests.post(f"{BASE_URL}/generate_response", json=payload)

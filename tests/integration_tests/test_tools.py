@@ -26,8 +26,6 @@ class TestTools(TestBase):
 
         response = model.generate_response("What is the current time and date?")
 
-        print(response)
-
         self.assert_response_is_about(
             response,
             "The response contains a time and a date",
@@ -39,8 +37,6 @@ class TestTools(TestBase):
         self.add_system_message(model)
 
         response = model.generate_response("Hi, how are you?")
-
-        print(response)
 
         self.assert_response_is_about(
             response,
@@ -62,7 +58,6 @@ class TestTools(TestBase):
                 selected_files=[temp_file_path],
             )
 
-            print(response)
             self.assert_response_is_about(
                 response, "The response contains the secret code which is 4512"
             )
@@ -92,7 +87,6 @@ class TestTools(TestBase):
                 selected_files=[secret_code_path, recipes_path],
             )
 
-            print(response)
             self.assert_response_is_about(
                 response, "The response contains the secret code which is 4512"
             )
@@ -102,7 +96,6 @@ class TestTools(TestBase):
                 selected_files=[recipes_path, secret_code_path],
             )
 
-            print(response)
             self.assert_response_is_about(
                 response, "The response contains the secret code which is 4512"
             )
@@ -130,7 +123,6 @@ class TestTools(TestBase):
                 selected_files=[temp_file_path],
             )
 
-            print(response)
             self.assert_response_is_about(
                 response,
                 "The response is a summary containing information about Turing's father and mother",
@@ -145,7 +137,6 @@ class TestTools(TestBase):
             "Can you return the current week by going to https://www.epochconverter.com/weeknumbers for me?"
         )
 
-        print(response)
         self.assert_response_is_about(
             response,
             "The response contains a week number",
@@ -158,7 +149,6 @@ class TestTools(TestBase):
 
         response = model.generate_response("Who wrote the book Murtagh?")
 
-        print(response)
         self.assert_response_is_about(
             response,
             "The response mentions Christopher Paolini",
@@ -171,7 +161,6 @@ class TestTools(TestBase):
 
         response = model.generate_response("What tools are available?")
 
-        print(response)
         self.assert_response_is_about(
             response,
             "The response contains a list of available tools",
