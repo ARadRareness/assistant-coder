@@ -1,5 +1,5 @@
 import os
-from typing import Any, Callable, Dict, List, Optional, Sequence, Set
+from typing import Any, Callable, Optional, Sequence, Set
 
 from PySide6.QtWidgets import (
     QApplication,
@@ -10,7 +10,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QPushButton,
     QDialog,
-    QFileSystemModel,
     QFileDialog,
     QTextEdit,
     QHBoxLayout,
@@ -18,12 +17,9 @@ from PySide6.QtWidgets import (
     QSystemTrayIcon,
     QMenu,
     QStyle,
-    QLineEdit,
     QComboBox,
-    QToolButton,
-    QWidget,
+    QLineEdit,
 )
-
 
 from PySide6.QtGui import (
     QTextCursor,
@@ -40,13 +36,12 @@ from PySide6.QtCore import (
     Qt,
     Signal,
     QSize,
-    QModelIndex,
-    QPersistentModelIndex,
 )
 
-from functools import partial
+from huggingface_hub import hf_hub_download  # type:ignore
 
-from huggingface_hub import hf_hub_download  # type: ignore
+from components.suggestions_dialog import SuggestionsDialog
+from components.custom_file_system_model import CustomFileSystemModel
 
 import client_api
 import threading
@@ -405,46 +400,6 @@ class AssistantCoder(QMainWindow):
                 break
 
 
-class DownloadModelDialog(QDialog):
-    def __init__(self, parent: AssistantCoder):
-        super().__init__(parent)
-        self.setWindowTitle("Download Model")
-
-        self.repo_id_label = QLabel("Repo id:")
-        self.repo_id_edit = QLineEdit()
-        self.filename_label = QLabel("Filename:")
-        self.filename_edit = QLineEdit()
-
-        # Create buttons for downloading and canceling
-        self.download_button = QPushButton("Download")
-        self.cancel_button = QPushButton("Cancel")
-
-        # Connect button clicks to slots
-        self.download_button.clicked.connect(self.download)
-        self.cancel_button.clicked.connect(self.reject)
-
-        # Layout setup
-        layout = QVBoxLayout()
-        layout.addWidget(self.repo_id_label)
-        layout.addWidget(self.repo_id_edit)
-        layout.addWidget(self.filename_label)
-        layout.addWidget(self.filename_edit)
-        layout.addWidget(self.download_button)
-        layout.addWidget(self.cancel_button)
-        self.setLayout(layout)
-
-        self.assistant_coder = parent
-
-    def download(self):
-        # Retrieve the values from the line edits and trigger the download method
-        repo_id = self.repo_id_edit.text()
-        filename = self.filename_edit.text()
-        self.accept()  # Close the dialog
-        self.assistant_coder.download_method(
-            repo_id, filename
-        )  # Call the download method
-
-
 class ChangeModelDialog(QDialog):
     def __init__(self, parent: Optional[AssistantCoder] = None):
         super().__init__(parent)
@@ -481,115 +436,6 @@ class ChangeModelDialog(QDialog):
         client_api.change_model(model_name)
 
 
-class CustomFileSystemModel(QFileSystemModel):
-    """Original class created by musicamante"""
-
-    checkStateChanged = Signal(str, bool)
-
-    def __init__(self):
-        super().__init__()
-        self.checkStates: Dict[str, Qt.CheckState] = {}
-        self.rowsInserted.connect(self.checkAdded)
-        self.rowsRemoved.connect(self.checkParent)
-        self.rowsAboutToBeRemoved.connect(self.checkRemoved)
-
-    def checkState(self, index: QModelIndex | QPersistentModelIndex) -> Qt.CheckState:
-        return self.checkStates.get(self.filePath(index), Qt.Unchecked)  # type: ignore
-
-    def setCheckState(
-        self,
-        index: QModelIndex | QPersistentModelIndex,
-        state: Qt.CheckState,
-        emitStateChange: bool = True,
-    ) -> None:
-        path = self.filePath(index)
-        if self.checkStates.get(path) == state:
-            return
-        self.checkStates[path] = state
-        if emitStateChange:
-            self.checkStateChanged.emit(path, bool(state))
-
-    def checkAdded(self, parent: QModelIndex, first: int, last: int) -> None:
-        # if a file/directory is added, ensure it follows the parent state as long
-        # as the parent is already tracked; note that this happens also when
-        # expanding a directory that has not been previously loaded
-        if not parent.isValid():
-            return
-
-        if self.filePath(parent) in self.checkStates:
-            state = self.checkState(parent)
-            for row in range(first, last + 1):
-                index = self.index(row, 0, parent)
-                path = self.filePath(index)
-                if path not in self.checkStates:
-                    self.checkStates[path] = state
-
-        # self.checkParent(parent)
-
-    def checkRemoved(self, parent: QModelIndex, first: int, last: int) -> None:
-        # remove items from the internal dictionary when a file is deleted;
-        # note that this *has* to happen *before* the model actually updates,
-        # that's the reason this function is connected to rowsAboutToBeRemoved
-        for row in range(first, last + 1):
-            path = self.filePath(self.index(row, 0, parent))
-            if path in self.checkStates:
-                self.checkStates.pop(path)
-
-    def checkParent(self, parent: QModelIndex) -> None:
-        # verify the state of the parent according to the children states
-        if not parent.isValid():
-            return
-        childStates = [
-            self.checkState(self.index(r, 0, parent))
-            for r in range(self.rowCount(parent))
-        ]
-
-        newState = Qt.Checked if all(childStates) else Qt.Unchecked  # type: ignore
-        oldState = self.checkState(parent)
-
-        if newState != oldState:
-            self.setCheckState(parent, newState)  # type: ignore
-            self.dataChanged.emit(parent, parent)
-        self.checkParent(parent.parent())
-
-    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlags:  # type: ignore
-        return super().flags(index) | Qt.ItemIsUserCheckable  # type: ignore
-
-    def data(self, index: QModelIndex | QPersistentModelIndex, role=Qt.DisplayRole):  # type: ignore
-        if role == Qt.CheckStateRole and index.column() == 0:  # type: ignore
-            return self.checkState(index)
-        return super().data(index, role)
-
-    def setData(
-        self,
-        index: QModelIndex | QPersistentModelIndex,
-        value: Any,
-        role: int = 0,
-        checkParent: bool = True,
-        emitStateChange: bool = True,
-    ) -> bool:
-        if role == Qt.CheckStateRole and index.column() == 0:  # type: ignore
-            self.setCheckState(index, value, emitStateChange)
-
-            for row in range(self.rowCount(index)):
-                # set the data for the children, but do not emit the state change,
-                # and don't check the parent state (to avoid recursion)
-                child_index = self.index(row, 0, index)
-                self.setData(
-                    child_index,
-                    value,
-                    Qt.CheckStateRole,  # type: ignore
-                    checkParent=False,
-                    emitStateChange=False,
-                )
-            self.dataChanged.emit(index, index)
-            if checkParent:
-                self.checkParent(index.parent())
-            return True
-
-        return super().setData(index, value, role)
-
-
 class CommandTextEdit(QTextEdit):
     def __init__(
         self,
@@ -608,6 +454,48 @@ class CommandTextEdit(QTextEdit):
                 self.command_execution()
         else:
             super().keyPressEvent(e)
+
+
+class DownloadModelDialog(QDialog):
+    def __init__(self, parent: AssistantCoder):
+        super().__init__(parent)
+        self.setWindowTitle("Download Model")
+
+        self.repo_id_label = QLabel("Repo id:")
+        self.repo_id_edit = QLineEdit()
+        self.repo_id_edit.setPlaceholderText("TheBloke/Mistral-7B-Instruct-v0.2-GGUF")
+        self.filename_label = QLabel("Filename:")
+        self.filename_edit = QLineEdit()
+        self.filename_edit.setPlaceholderText("mistral-7b-instruct-v0.2.Q5_K_M.gguf")
+
+        # Create buttons for downloading and canceling
+        self.download_button = QPushButton("Download")
+        self.cancel_button = QPushButton("Cancel")
+
+        # Connect button clicks to slots
+        self.download_button.clicked.connect(self.download)
+        self.cancel_button.clicked.connect(self.reject)
+
+        # Layout setup
+        layout = QVBoxLayout()
+        layout.addWidget(self.repo_id_label)
+        layout.addWidget(self.repo_id_edit)
+        layout.addWidget(self.filename_label)
+        layout.addWidget(self.filename_edit)
+        layout.addWidget(self.download_button)
+        layout.addWidget(self.cancel_button)
+        self.setLayout(layout)
+
+        self.assistant_coder = parent
+
+    def download(self):
+        # Retrieve the values from the line edits and trigger the download method
+        repo_id = self.repo_id_edit.text()
+        filename = self.filename_edit.text()
+        self.accept()  # Close the dialog
+        self.assistant_coder.download_method(
+            repo_id, filename
+        )  # Call the download method
 
 
 class MessageSender(QObject):
@@ -684,57 +572,6 @@ class MessageSender(QObject):
 
         response_thread = threading.Thread(target=generate_response_thread)
         response_thread.start()
-
-
-class SuggestionsDialog(QDialog):
-    def __init__(
-        self, send_command: Callable[[str], None], parent: Optional[QWidget] = None
-    ):
-        super().__init__(parent)
-        self.setWindowTitle("Suggestions")
-        self.suggestions: List[str] = []  # suggestions
-        self.init_ui()
-        self.send_command = send_command
-        self.buttons = []
-
-    def set_suggestions(self, suggestions: Sequence[str]) -> None:
-        self.suggestions = list(suggestions)
-
-        # Remove previous widgets from self.layout
-        for i in reversed(range(self.layout_actual.count())):
-            self.layout_actual.itemAt(i).widget().setParent(None)
-
-        for suggestion in self.suggestions:
-            if suggestion:
-                button = QToolButton(self)
-                button.setText(self.split_suggestion(suggestion))
-                button.clicked.connect(partial(self.send, suggestion))
-                self.layout_actual.addWidget(button)
-
-    def split_suggestion(self, suggestion: str) -> str:
-        words = suggestion.split()
-        lines: List[str] = []
-        current_line = ""
-
-        for word in words:
-            if len(current_line) + len(word) <= 80:
-                current_line += word + " "
-            else:
-                lines.append(current_line)
-                current_line = word + " "
-
-        if current_line:
-            lines.append(current_line)
-
-        return "\n".join(lines)
-
-    def send(self, message: str) -> None:
-        self.send_command(message)
-
-    def init_ui(self):
-        self.layout = lambda: QVBoxLayout()
-        self.layout_actual = self.layout()
-        self.setLayout(self.layout_actual)
 
 
 if __name__ == "__main__":
