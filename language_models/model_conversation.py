@@ -79,7 +79,7 @@ class ModelConversation:
             self.write_to_history("RESPONSE AFTER TOOLS", model, messages, use_metadata)
 
         if use_knowledge and messages:
-            new_message = self.handle_knowledge(messages[-1])
+            new_message = self.handle_knowledge(model, messages[-1])
             messages[-1] = new_message
 
             self.write_to_history(
@@ -109,8 +109,6 @@ class ModelConversation:
         )
 
         response = model.generate_text(messages, max_tokens=200)
-
-        print(response.get_text())
 
         return parse_json(response.get_text())["suggestions"]
 
@@ -165,14 +163,22 @@ class ModelConversation:
         if output and output != JSON_ERROR_MESSAGE:
             messages[-1].append_content(f"(Information to the model, {output})")
 
-    def handle_knowledge(self, message: ModelMessage) -> ModelMessage:
+    def handle_knowledge(self, model: ApiModel, message: ModelMessage) -> ModelMessage:
         formatted_documents: List[str] = []
 
         self.memory_manager.refresh_memory()
 
-        for i, document in enumerate(
-            self.memory_manager.get_most_relevant_documents(message.get_message(), 3)
-        ):
+        retrieved_documents = (
+            self.memory_manager.get_most_relevant_documents_with_rerank(
+                message.get_message(), 3
+            )
+        )
+
+        relevant_documents = self.get_relevant_documents(
+            model, retrieved_documents, message
+        )
+
+        for i, document in enumerate(relevant_documents):
             formatted_documents.append(f"{i+1}. {document}")
 
         if formatted_documents:
@@ -184,6 +190,93 @@ class ModelConversation:
             )
         else:
             return message
+
+    def get_relevant_documents(
+        self, model: ApiModel, documents: Sequence[str], message: ModelMessage
+    ) -> List[str]:
+        formatted_documents: List[str] = []
+
+        for i, doc in enumerate(documents):
+            if i == 0:
+                formatted_documents.append(
+                    f"<DOCUMENT_{i+1}>\n{doc}</DOCUMENT_{i+1}>\n"
+                )
+
+        formatted_string = "\n".join(formatted_documents)
+
+        system_message = "For the user message below, answer with which of the documents that contains information that could be relevant or related to what the user message is about. Focus on the core meaning of the user message, is any information from one of the documents relevent to the core meaning?"
+
+        system_message = (
+            system_message
+            + ' Write out the response as a json object with the following structure: {"relevant_documents": [1, 2, 3]}. If none are relevant, write {"relevant_documents": []}.'
+        )
+
+        user_message = f"""
+        <USER_MESSAGE>
+        {message.get_message()}
+        </USER_MESSAGE>
+        <DOCUMENTS>
+        {formatted_string}
+        </DOCUMENTS>
+        """
+
+        example_message = """
+        <USER_MESSAGE>
+        What is my favorite color?
+        </USER_MESSAGE>
+        <DOCUMENTS>
+        <DOCUMENT_1>
+        There is a monkey.
+        </DOCUMENT_1>
+        <DOCUMENT_2>
+        The user likes the color blue.
+        </DOCUMENT_2>
+        <DOCUMENT_3>
+        The cookies are being baked right now.
+        </DOCUMENT_3>
+        </DOCUMENTS>
+        """
+
+        example_answer = '{"relevant_documents":[2]}'
+
+        messages = [
+            ModelMessage(Role.SYSTEM, system_message, message.get_metadata()),
+            ModelMessage(Role.USER, example_message, message.get_metadata()),
+            ModelMessage(Role.ASSISTANT, example_answer, message.get_metadata()),
+            ModelMessage(Role.USER, user_message, message.get_metadata()),
+        ]
+
+        for _ in range(JSON_PARSE_RETRY_COUNT):
+            response = model.generate_text(
+                messages,
+                40,
+                use_metadata=True,
+            )
+            response_text = response.get_text().replace("\\", "")
+
+            parsed_json = parse_json(response_text)
+
+            error_in_json: bool = False
+
+            if "relevant_documents" in parsed_json:
+                output_documents: List[str] = []
+
+                for document_number in parsed_json["relevant_documents"]:
+                    try:
+                        document_number = int(document_number)
+                    except ValueError:
+                        error_in_json = True
+                        break
+
+                    if document_number <= 0 or document_number > len(documents):
+                        error_in_json = True
+                        break
+
+                    output_documents.append(documents[document_number - 1])
+
+                if not error_in_json:
+                    return output_documents
+        return []
 
     def write_to_history(
         self,
