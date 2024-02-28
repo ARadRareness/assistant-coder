@@ -1,6 +1,7 @@
 import datetime
 import os
 import sys
+import yaml
 from typing import Dict, List, Optional
 from flask import Flask, Response, jsonify, request
 import uuid
@@ -246,22 +247,22 @@ def generate_response() -> Response:
         return jsonify({"result": False, "error": str(e)})
 
 
-def _get_model_manager(mock_llama: bool = False):
+def _get_model_manager(llama_cpp_path: str, mock_llama: bool = False):
     if mock_llama:
         print("WARNING: Mock Mode")
     else:
-        llamacpp_path = os.path.join("bin", "server.exe")
+        binary_path = os.path.join(llama_cpp_path, "server.exe")
 
-        if not os.path.exists(llamacpp_path):
+        if not os.path.exists(binary_path):
             print(
                 "Error:",
-                "Add the llama.cpp server binary and llama.dll into the bin folder. See https://github.com/ggerganov/llama.cpp.",
+                f"Add the llama.cpp server binary and llama.dll into the {llama_cpp_path} folder. See https://github.com/ggerganov/llama.cpp.",
             )
             sys.exit(-1)
 
         gguf_models = list(filter(lambda f: f.endswith(".gguf"), os.listdir("models")))
 
-        model_manager = ModelManager(llamacpp_path, 8000)
+        model_manager = ModelManager(binary_path, 8000)
 
         if len(model_manager.get_available_models()) == 0:
             if not gguf_models:
@@ -269,6 +270,16 @@ def _get_model_manager(mock_llama: bool = False):
                 sys.exit(-1)
 
         return model_manager
+
+
+def read_config() -> Dict[str, str]:
+    if os.path.exists("config.yaml"):
+        with open("config.yaml", "r") as file:
+            config = yaml.safe_load(file)
+
+            if config:
+                return config
+    return {}
 
 
 mock_llama = False
@@ -279,7 +290,10 @@ if __name__ == "__main__":
     if mock_llama:
         print("WARNING: Mock Mode")
     else:
-        model_manager = _get_model_manager(mock_llama)
+
+        config = read_config()
+        llama_cpp_path = config.get("llama_cpp_path", "bin")
+        model_manager = _get_model_manager(llama_cpp_path, mock_llama)
 
         if not model_manager:
             print("Error: Model manager not found.")
