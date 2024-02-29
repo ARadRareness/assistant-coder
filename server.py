@@ -1,6 +1,7 @@
 import datetime
 import os
 import sys
+import traceback
 import yaml
 from typing import Dict, List, Optional
 from flask import Flask, Response, jsonify, request
@@ -49,6 +50,7 @@ def add_system_message() -> Response:
         return jsonify({"result": True})
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({"result": False, "error_message": str(e)})
 
 
@@ -75,6 +77,7 @@ def add_user_message() -> Response:
         return jsonify({"result": True})
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({"result": False, "error_message": str(e)})
 
 
@@ -101,6 +104,7 @@ def add_assistant_message() -> Response:
         return jsonify({"result": True})
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({"result": False, "error_message": str(e)})
 
 
@@ -123,6 +127,7 @@ def get_conversation() -> Response:
         return jsonify({"result": True, "conversation": conversation_data})
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({"result": False, "error": str(e)})
 
 
@@ -145,6 +150,7 @@ def get_model_info() -> Response:
         return jsonify({"result": True, "info": {"path": model_path}})
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({"result": False, "error_message": str(e)})
 
 
@@ -163,6 +169,7 @@ def change_model() -> Response:
         model_manager.change_model(model_name)
         return jsonify({"result": True})
     except Exception as e:
+        traceback.print_exc()
         return jsonify({"result": False, "error_message": str(e)})
 
 
@@ -178,6 +185,7 @@ def get_available_models() -> Response:
                 {"result": False, "error_message": "No model manager found."}
             )
     except Exception as e:
+        traceback.print_exc()
         return jsonify({"result": False, "error_message": str(e)})
 
 
@@ -244,6 +252,7 @@ def generate_response() -> Response:
             return jsonify({"result": True, "response": response})
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({"result": False, "error": str(e)})
 
 
@@ -251,12 +260,15 @@ def _get_model_manager(llama_cpp_path: str, mock_llama: bool = False):
     if mock_llama:
         print("WARNING: Mock Mode")
     else:
-        binary_path = os.path.join(llama_cpp_path, "server.exe")
+        if os.name == "nt":
+            binary_path = os.path.join(llama_cpp_path, "server.exe")
+        else:
+            binary_path = os.path.join(llama_cpp_path, "server")
 
         if not os.path.exists(binary_path):
             print(
                 "Error:",
-                f"Add the llama.cpp server binary and llama.dll into the {llama_cpp_path} folder. See https://github.com/ggerganov/llama.cpp.",
+                f"Add the llama.cpp server binary and (for Windows) llama.dll into the {llama_cpp_path} folder. See https://github.com/ggerganov/llama.cpp.",
             )
             sys.exit(-1)
 
