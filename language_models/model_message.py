@@ -21,6 +21,18 @@ class MessageMetadata:
         self.selected_files = selected_files
         self.ask_permission_to_run_tools = ask_permission_to_run_tools
         self.clipboard_content = clipboard_content
+        self.tool_output = ""
+        self.knowledge_information = ""
+        self.reflection_text = ""
+
+    def set_knowledge_information(self, knowledge_information: str) -> None:
+        self.knowledge_information = knowledge_information
+
+    def set_reflection_text(self, reflection_text: str) -> None:
+        self.reflection_text = reflection_text
+
+    def set_tool_output(self, tool_output: str) -> None:
+        self.tool_output = tool_output
 
 
 class ModelMessage:
@@ -44,15 +56,24 @@ class ModelMessage:
 
     def get_message(self, use_metadata: bool = False) -> str:
         if self.is_user_message() and use_metadata:
-            return f"{self.get_metadata_info()}{self.get_content()}"
+            return f"{self.get_prefix_metadata_info()}{self.get_content()}{self.get_suffix_metadata_info()}"
         else:
             return self.get_content()
 
-    def get_metadata_info(self) -> str:
+    def get_prefix_metadata_info(self) -> str:
         info = ""
 
+        if self.metadata.knowledge_information:
+            info = (
+                "(Your knowledge base contains the following information: "
+                + self.metadata.knowledge_information
+                + ")\n\n"
+            )
+
+        combined_info = ""
+
         if self.metadata.clipboard_content:
-            info += f'The clipboard contains the following text: "{self.metadata.clipboard_content}". '
+            combined_info += f'The clipboard contains the following text: "{self.metadata.clipboard_content}". '
 
         if self.metadata.selected_files:
             files = ['"' + file + '"' for file in self.metadata.selected_files]
@@ -61,11 +82,28 @@ class ModelMessage:
             for i, file in enumerate(files):
                 numbered_list.append(f"{i+1}. {file}")
 
-            info += f"The currently selected files are {', '.join(numbered_list)}. "
+            combined_info += (
+                f"The currently selected files are {', '.join(numbered_list)}. "
+            )
 
-        if info:
-            info = f"[Metadata info provided with the message, don't write it out unless necessary: {info.strip()}] "
+        if self.metadata.reflection_text:
+            combined_info += f"You have previously concerning the current topic had the following reflections: {self.metadata.reflection_text}. "
+
+        if combined_info:
+            info += f"[Metadata info provided with the message, don't write it out unless necessary: {combined_info.strip()}] "
+
         return info
+
+    def get_suffix_metadata_info(self) -> str:
+        info_list: List[str] = []
+
+        if self.metadata.tool_output:
+            info_list.append(self.metadata.tool_output)
+
+        if info_list:
+            output: str = "\n".join(info_list)
+            return f"\n(Information to the model, {output})"
+        return ""
 
     def get_role(self) -> str:
         return self.role.name.lower()

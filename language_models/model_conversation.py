@@ -79,8 +79,7 @@ class ModelConversation:
             self.write_to_history("RESPONSE AFTER TOOLS", model, messages, use_metadata)
 
         if use_knowledge and messages:
-            new_message = self.handle_knowledge(model, messages[-1])
-            messages[-1] = new_message
+            self.handle_knowledge(model, messages[-1])
 
             self.write_to_history(
                 "RESPONSE AFTER KNOWLEDGE", model, messages, use_metadata
@@ -134,9 +133,10 @@ class ModelConversation:
 
         messages[-1] = last_message  # Restore the old user message
 
-        messages[-1].append_content(
-            f"(Information to the model, this is some reflections that you can use: {response.get_text()})"
-        )
+        reflection_text = response.get_text()
+
+        if reflection_text:
+            messages[-1].get_metadata().set_reflection_text(reflection_text)
 
     def handle_tool_use(
         self,
@@ -161,9 +161,9 @@ class ModelConversation:
                 break
 
         if output and output != JSON_ERROR_MESSAGE:
-            messages[-1].append_content(f"(Information to the model, {output})")
+            messages[-1].get_metadata().set_tool_output(output)
 
-    def handle_knowledge(self, model: ApiModel, message: ModelMessage) -> ModelMessage:
+    def handle_knowledge(self, model: ApiModel, message: ModelMessage) -> None:
         formatted_documents: List[str] = []
 
         self.memory_manager.refresh_memory()
@@ -183,13 +183,7 @@ class ModelConversation:
 
         if formatted_documents:
             formatted_document_message = "\n".join(formatted_documents)
-            return ModelMessage(
-                Role.USER,
-                f"(Your knowledge base contains the following information: {formatted_document_message})\n\n{message.get_content()}",
-                message.get_metadata(),
-            )
-        else:
-            return message
+            message.get_metadata().set_knowledge_information(formatted_document_message)
 
     def get_relevant_documents(
         self, model: ApiModel, documents: Sequence[str], message: ModelMessage
