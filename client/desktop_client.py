@@ -47,6 +47,11 @@ import client_api
 import threading
 
 
+from pydub import AudioSegment  # type: ignore
+from pydub.playback import play  # type: ignore
+import io
+
+
 class AssistantCoder(QMainWindow):
     def __init__(self, app: QApplication):
         super().__init__()
@@ -196,6 +201,10 @@ class AssistantCoder(QMainWindow):
             "Use clipboard", window_menu, options_menu, checked_by_default=False
         )
 
+        self.use_tts_action = self.add_checkable_menu_action(
+            "Use Text To Speech", window_menu, options_menu, checked_by_default=False
+        )
+
         window_menu.addSeparator()
         options_menu.addSeparator()
 
@@ -260,7 +269,6 @@ class AssistantCoder(QMainWindow):
         layout.addWidget(command_label)
 
         self.command = CommandTextEdit(command_execution=self.execute_command)
-        # self.command.returnPressed.connect(self.execute_command)
         layout.addWidget(self.command)
 
     def display_message(self, message: str, color: Optional[str] = None) -> None:
@@ -516,6 +524,7 @@ class MessageSender(QObject):
         use_knowledge = self._parent.use_knowledge_action.isChecked()
         use_safety = self._parent.use_safety_action.isChecked()
         use_clipboard = self._parent.use_clipboard_action.isChecked()
+        use_tts = self._parent.use_tts_action.isChecked()
 
         clipboard_content = QGuiApplication.clipboard().text() if use_clipboard else ""
 
@@ -561,6 +570,13 @@ class MessageSender(QObject):
 
                 if response:
                     self.message_received.emit("AC: " + response)
+
+                    if use_tts:
+                        tts_response = client_api.generate_tts(response)
+                        if tts_response:
+                            audio_stream = io.BytesIO(tts_response)
+                            audio = AudioSegment.from_file(audio_stream, format="wav")  # type: ignore
+                            play(audio)  # type: ignore
 
                     if suggestions:
                         self.suggestions_received.emit(suggestions)

@@ -199,6 +199,17 @@ def change_model(model_name: str):
     return data["result"]
 
 
+def generate_tts(text: str) -> bytes:
+    payload = {"text": text}
+    response = requests.post(f"{BASE_URL}/tts", json=payload)
+
+    if response.status_code != 200:
+        print(f"Error generating TTS. status_code={response.status_code}")
+        return b""
+
+    return response.content
+
+
 def generate_response(
     conversation_id: str,
     user_message: str,

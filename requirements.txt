@@ -11,3 +11,7 @@ sentence-transformers
 faiss-cpu
 
 duckduckgo-search
+
+TTS
+simpleaudio
+pydub

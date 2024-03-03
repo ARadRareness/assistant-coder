@@ -4,13 +4,14 @@ import sys
 import traceback
 import yaml
 from typing import Dict, List, Optional
-from flask import Flask, Response, jsonify, request
+from flask import Flask, Response, jsonify, request, send_file  # type: ignore
 import uuid
 from language_models.memory_manager import MemoryManager
 
 from language_models.model_conversation import ModelConversation
 from language_models.model_manager import ModelManager
 from language_models.model_message import MessageMetadata
+from language_models.audio.text_to_speech_engine import TextToSpeechEngine
 
 app = Flask(__name__)
 
@@ -18,6 +19,8 @@ conversations: Dict[str, ModelConversation] = {}
 
 model_manager: Optional[ModelManager] = None
 memory_manager: MemoryManager = MemoryManager()
+
+text_to_speech_engine: Optional[TextToSpeechEngine] = None
 
 
 @app.route("/start_new_conversation", methods=["GET"])
@@ -254,6 +257,27 @@ def generate_response() -> Response:
     except Exception as e:
         traceback.print_exc()
         return jsonify({"result": False, "error": str(e)})
+
+
+@app.route("/tts", methods=["POST"])
+def tts() -> Response:
+    global text_to_speech_engine
+    try:
+        data = request.get_json()
+        text = data.get("text")
+
+        if not text:
+            raise ValueError("Missing 'text' in the request.")
+
+        if not text_to_speech_engine:
+            text_to_speech_engine = TextToSpeechEngine()
+        wav_file_path = text_to_speech_engine.text_to_speech(text)
+
+        return send_file(wav_file_path, as_attachment=True)  # type: ignore
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"result": False, "error_message": str(e)})
 
 
 def _get_model_manager(llama_cpp_path: str, mock_llama: bool = False):
