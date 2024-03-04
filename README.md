@@ -1,16 +1,17 @@
 # assistant-coder
 
-A system and architecture for an assistant coder that amongst other things can be used to generate coding solutions using large language models.
+A system architecture for a completely offline AI assistant that amongst other things can be used to chat and generate coding solutions using large language models.
 
 ## Features
 * Flask server that handles multiple conversations.
 * Support for simple tools (browse/search web, read files, retrieve time and date).
 * Support for knowledge retrieval (using embeddings and vector stores).
-* Suggestion system where the assistant suggests follow-up questions.
-* Safety system where the assistant asks for access to files and Internet use.
+* Suggestion system where the assistant can suggest follow-up questions.
+* Safety system where the assistant asks for permission to access files and the internet.
 * Support for using the clipboard as input to the assistant.
-* Simple gradio client for basic chatbot use.
-* PyQt6 client for more advanced coding purposes.
+* Streamed text to speech playback using XTTS v2.
+* Simple gradio client for basic chatbot uses.
+* PySide6 client for more advanced chatbot uses.
 
 ## How to install
 
@@ -30,6 +31,13 @@ conda activate ac
 ```
 
 ### 4. Install requirements
+For Windows using CUDA, install the following requirements
+```
+python -m pip install torch torchvision torchaudio --index-url http://download.pytorch.org/whl/cu118 --trusted-host download.pytorch.org
+python -m pip install https://github.com/jllllll/bitsandbytes-windows-webui/releases/download/wheels/bitsandbytes-0.41.1-py3-none-win_amd64.whl
+```
+
+Then run the following command to install the rest of the requirements
 ```
 pip install -r requirements.txt
 ```

@@ -3,6 +3,7 @@ import os
 import sys
 import traceback
 import yaml
+import struct
 from typing import Dict, List, Optional
 from flask import Flask, Response, jsonify, request, send_file  # type: ignore
 import uuid
@@ -271,9 +272,18 @@ def tts() -> Response:
 
         if not text_to_speech_engine:
             text_to_speech_engine = TextToSpeechEngine()
-        wav_file_path = text_to_speech_engine.text_to_speech(text)
 
-        return send_file(wav_file_path, as_attachment=True)  # type: ignore
+        wav_file_paths = text_to_speech_engine.text_to_speech_with_split(text)
+
+        def generate():
+            for wav_file_path in wav_file_paths:
+                with open(wav_file_path, "rb") as wav_file:
+                    wav_data = wav_file.read()
+                    # Prefix each WAV file with its size using a 4-byte integer
+                    yield struct.pack("<I", len(wav_data))
+                    yield wav_data
+
+        return Response(generate(), mimetype="audio/wav")
 
     except Exception as e:
         traceback.print_exc()

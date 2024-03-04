@@ -1,4 +1,5 @@
 import requests
+import struct
 from typing import Any, Dict, Sequence, Tuple
 
 BASE_URL = (
@@ -199,15 +200,33 @@ def change_model(model_name: str):
     return data["result"]
 
 
-def generate_tts(text: str) -> bytes:
+def generate_tts(text: str):
     payload = {"text": text}
-    response = requests.post(f"{BASE_URL}/tts", json=payload)
+    response = requests.post(f"{BASE_URL}/tts", json=payload, stream=True)
 
     if response.status_code != 200:
         print(f"Error generating TTS. status_code={response.status_code}")
-        return b""
+        yield b""  # Yield an empty byte string to indicate an error condition gracefully
 
-    return response.content
+    try:
+        while True:
+            # Read the size of the next WAV file (4 bytes = 32 bits integer)
+            size_data = response.raw.read(4)
+            if not size_data:
+                break  # No more data, exit the loop
+
+            # Unpack the 4 bytes to an integer (assuming little-endian byte order)
+            (size,) = struct.unpack("<I", size_data)
+
+            # Now read the WAV file of the specified size
+            wav_data = response.raw.read(size)
+            if wav_data:
+                yield wav_data
+            else:
+                break  # In case the data stream is shorter than expected
+    except Exception as e:
+        print(f"Error reading TTS data: {e}")
+        yield b""
 
 
 def generate_response(

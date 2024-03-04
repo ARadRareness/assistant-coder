@@ -45,6 +45,7 @@ from components.custom_file_system_model import CustomFileSystemModel
 
 import client_api
 import threading
+import traceback
 
 
 from pydub import AudioSegment  # type: ignore
@@ -202,7 +203,7 @@ class AssistantCoder(QMainWindow):
         )
 
         self.use_tts_action = self.add_checkable_menu_action(
-            "Use Text To Speech", window_menu, options_menu, checked_by_default=False
+            "Use text to speech", window_menu, options_menu, checked_by_default=False
         )
 
         window_menu.addSeparator()
@@ -572,18 +573,17 @@ class MessageSender(QObject):
                     self.message_received.emit("AC: " + response)
 
                     if use_tts:
-                        tts_response = client_api.generate_tts(response)
-                        if tts_response:
-                            audio_stream = io.BytesIO(tts_response)
-                            audio = AudioSegment.from_file(audio_stream, format="wav")  # type: ignore
-                            play(audio)  # type: ignore
+                        for tts_response in client_api.generate_tts(response):
+                            if tts_response:
+                                audio_stream = io.BytesIO(tts_response)
+                                audio = AudioSegment.from_file(audio_stream, format="wav")  # type: ignore
+                                play(audio)  # type: ignore
 
                     if suggestions:
                         self.suggestions_received.emit(suggestions)
 
-                    print(response)
-
             except Exception as e:
+                traceback.print_exc()
                 print("Error in generate_response_thread:", e)
 
         response_thread = threading.Thread(target=generate_response_thread)
