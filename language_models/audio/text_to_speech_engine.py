@@ -2,6 +2,7 @@ from typing import List
 import torch
 import hashlib
 import os
+import subprocess
 from TTS.api import TTS  # type: ignore
 import spacy
 
@@ -10,7 +11,11 @@ class TextToSpeechEngine:
     def __init__(self) -> None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
         print("TTS IS USING", device)
-        self.tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
+        self.tts = None
+        if os.name == "posix":
+            self.tts = None  # Use built in TTS with Mac
+        else:
+            self.tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
 
     def text_to_speech(self, text: str) -> str:
         output_folder = "output"
@@ -21,13 +26,40 @@ class TextToSpeechEngine:
         output_path = os.path.join(output_folder, f"{md5sum}.wav")
 
         if not os.path.exists(output_path):
-            self.tts.tts_to_file(  # type: ignore
-                text,
-                speaker_wav="example_audio.wav",
-                file_path=output_path,
-                language="en",
-            )
+            if self.tts is None:
+                self.text_to_speech_mac(text, output_path)
+            else:
+                self.tts.tts_to_file(  # type: ignore
+                    text,
+                    speaker_wav="example_audio.wav",
+                    file_path=output_path,
+                    language="en",
+                )
         return output_path
+
+    def text_to_speech_mac(self, text: str, output_path: str) -> None:
+        subprocess.run(
+            [
+                "say",
+                "-v",
+                "Karen (Premium)",
+                "-o",
+                output_path,
+                "--data-format=LEF32@22050",
+                text,
+            ]
+        )
+
+        if not os.path.exists(output_path):
+            subprocess.run(
+                [
+                    "say",
+                    "-o",
+                    output_path,
+                    "--data-format=LEF32@22050",
+                    text,
+                ]
+            )
 
     def text_to_speech_with_split(self, text: str):
         try:
