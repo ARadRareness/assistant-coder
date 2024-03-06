@@ -3,6 +3,7 @@ from typing import List, Optional, Sequence
 
 from language_models.api.base import ApiModel
 from language_models.constants import JSON_ERROR_MESSAGE, JSON_PARSE_RETRY_COUNT
+from language_models.helpers.json_fixer import fix_json_errors
 from language_models.helpers.json_parser import parse_json
 from language_models.memory_manager import MemoryManager
 from language_models.model_message import MessageMetadata, ModelMessage, Role
@@ -109,7 +110,16 @@ class ModelConversation:
 
         response = model.generate_text(messages, max_tokens=200)
 
-        return parse_json(response.get_text())["suggestions"]
+        try:
+            return parse_json(response.get_text())["suggestions"]
+        except Exception as e:
+            response = fix_json_errors(
+                model, generate_metadata(), response.get_text(), str(e)
+            )
+            if response:
+                return response["suggestions"]
+
+        return []
 
     def handle_reflections(
         self,
@@ -155,7 +165,7 @@ class ModelConversation:
 
         for _ in range(JSON_PARSE_RETRY_COUNT):
             output, _ = self.tool_manager.parse_and_execute(
-                response, tool_messages[-1].get_metadata()
+                model, response, tool_messages[-1].get_metadata()
             )
             if output != JSON_ERROR_MESSAGE:
                 break

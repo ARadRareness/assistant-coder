@@ -1,7 +1,9 @@
+import datetime
 from typing import Any, Callable
 import unittest
 
 from client.client_api import Model
+from language_models.model_message import MessageMetadata
 
 TEST_RUN_COUNT = 3
 
@@ -61,3 +63,10 @@ class TestBase(unittest.TestCase):
 
         prompt = f"You are AC, the helpful AI coding assistant. You are currently running through the following model: {model_path}."
         model.add_system_message(prompt)
+
+    def generate_metadata(
+        self, ask_permission_to_run_tools: bool = False
+    ) -> MessageMetadata:
+        return MessageMetadata(
+            datetime.datetime.now(), [], ask_permission_to_run_tools, ""
+        )

@@ -9,7 +9,7 @@ A system architecture for a completely offline AI assistant that amongst other t
 * Suggestion system where the assistant can suggest follow-up questions.
 * Safety system where the assistant asks for permission to access files and the internet.
 * Support for using the clipboard as input to the assistant.
-* Streamed text to speech playback using XTTS v2.
+* Streamed text to speech playback using XTTS v2 or 'say' command for Mac systems.
 * Simple gradio client for basic chatbot uses.
 * PySide6 client for more advanced chatbot uses.
 

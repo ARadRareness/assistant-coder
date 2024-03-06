@@ -239,7 +239,7 @@ def generate_response() -> Response:
 
         if use_suggestions:
             suggestions = []
-            for _ in range(3):
+            for _ in range(2):
                 try:
                     suggestions = conversations[conversation_id].generate_suggestions(
                         model_manager.models[0]

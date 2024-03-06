@@ -1,6 +1,8 @@
 import json, subprocess, sys
-from typing import Dict, Optional, Sequence, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
+from language_models.api.base import ApiModel
 from language_models.constants import JSON_ERROR_MESSAGE
+from language_models.helpers.json_fixer import fix_json_errors
 from language_models.helpers.json_parser import handle_json
 from language_models.helpers.tool_helper import load_available_tools
 from language_models.model_message import MessageMetadata, ModelMessage, Role
@@ -73,23 +75,38 @@ class ToolManager:
 
         return new_response
 
+    def parse_json(
+        self, model: ApiModel, response: ModelResponse, metadata: MessageMetadata
+    ) -> Tuple[Dict[str, Any], str]:
+        response_text = response.get_text().strip()
+        handled_text = handle_json(response_text).replace("\\_", "_")
+        handled_text = self.add_backslashes(handled_text)
+
+        try:
+            return json.loads(handled_text), handled_text
+        except Exception as e:
+            result = fix_json_errors(model, metadata, handled_text, str(e))
+            if result:
+                return result, handled_text
+            else:
+                raise Exception(f"Failed to fix JSON: {handled_text}")
+
     def parse_and_execute(
-        self, response: ModelResponse, metadata: MessageMetadata
+        self, model: ApiModel, response: ModelResponse, metadata: MessageMetadata
     ) -> Tuple[str, str]:
         response_text = ""
 
         try:
-            response_text = response.get_text().strip()
-            handled_text = handle_json(response_text).replace("\\_", "_")
-            handled_text = self.add_backslashes(handled_text)
-
-            command = json.loads(handled_text)
+            command, handled_text = self.parse_json(model, response, metadata)
 
             if not "tool" in command:
                 print(f"MISSING tool in: {response_text}")
 
             if not "arguments" in command:
-                command["arguments"] = []
+                command["arguments"] = {}
+
+            if not isinstance(command["arguments"], dict):
+                command["arguments"] = {}
 
             target_tool = self.get_target_tool(command)
 
@@ -116,7 +133,7 @@ class ToolManager:
         except Exception as e:
             print(f"FAILED TO PARSE: {response_text}")
             print(f"Exception message: {str(e)}")
-            return JSON_ERROR_MESSAGE, response_text
+            return JSON_ERROR_MESSAGE, str(e)
 
     def get_user_permission(self, message: str):
         result = subprocess.call(
