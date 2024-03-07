@@ -112,9 +112,11 @@ class ModelConversation:
 
         try:
             return parse_json(response.get_text())["suggestions"]
-        except Exception as e:
+        except Exception as _:
             response = fix_json_errors(
-                model, generate_metadata(), response.get_text(), str(e)
+                model,
+                generate_metadata(),
+                response.get_text(),
             )
             if response:
                 return response["suggestions"]

@@ -8,8 +8,60 @@ def fix_json_errors(
     model: ApiModel,
     metadata: MessageMetadata,
     broken_json: str,
+) -> Optional[Dict[str, Any]]:
+    json_fix_attempt = fix_json_errors_manually(broken_json)
+
+    try:
+        return parse_json(json_fix_attempt)
+    except Exception as e:
+        return fix_json_errors_with_model(model, metadata, broken_json, str(e))
+
+
+def fix_json_errors_manually(broken_json: str) -> str:
+    fixed_json = ""
+
+    in_argument = False
+    using_single_quote_argument = False
+
+    for c in broken_json:
+        if in_argument:
+            if using_single_quote_argument:
+                if c == "'":
+                    in_argument = False
+                    using_single_quote_argument = False
+                    fixed_json += '"'
+                else:
+                    fixed_json += c
+            elif c == '"':
+                in_argument = False
+                using_single_quote_argument = False
+                fixed_json += c
+            else:
+                fixed_json += c
+        else:
+            if c == '"':
+                in_argument = True
+                fixed_json += c
+            elif c == "'":
+                in_argument = True
+                using_single_quote_argument = True
+                fixed_json += '"'
+            else:
+                fixed_json += c
+
+    return fixed_json
+
+
+def fix_json_errors_with_model(
+    model: ApiModel,
+    metadata: MessageMetadata,
+    broken_json: str,
     parsing_error: str,
 ) -> Optional[Dict[str, Any]]:
+
+    # Only try to fix the string if it contains an opening brace
+    if not "{" in broken_json:
+        return None
 
     system_message = ModelMessage(
         role=Role.SYSTEM,

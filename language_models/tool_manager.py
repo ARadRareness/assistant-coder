@@ -84,8 +84,8 @@ class ToolManager:
 
         try:
             return json.loads(handled_text), handled_text
-        except Exception as e:
-            result = fix_json_errors(model, metadata, handled_text, str(e))
+        except Exception as _:
+            result = fix_json_errors(model, metadata, handled_text)
             if result:
                 return result, handled_text
             else:
