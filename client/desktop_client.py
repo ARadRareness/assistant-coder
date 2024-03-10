@@ -1,4 +1,5 @@
 import os
+import argparse
 from typing import Any, Callable, Optional, Sequence, Set
 
 from PySide6.QtWidgets import (
@@ -54,8 +55,10 @@ import io
 
 
 class AssistantCoder(QMainWindow):
-    def __init__(self, app: QApplication):
+    def __init__(self, app: QApplication, server_url: str = "http://127.0.0.1:17173"):
         super().__init__()
+
+        client_api.BASE_URL = server_url
 
         self.app = app
         self.resize(QSize(840, 480))
@@ -591,7 +594,19 @@ class MessageSender(QObject):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Assistant Coder Desktop Client.",
+        epilog="For more information, visit https://github.com/ARadRareness/assistant-coder.",
+    )
+    parser.add_argument(
+        "--server-url",
+        type=str,
+        help="URL of the remote server to connect to. Default is http://127.0.0.1:17173.",
+        default="http://127.0.0.1:17173",
+    )
+    args = parser.parse_args()
+
     app = QApplication([])
-    window = AssistantCoder(app)
+    window = AssistantCoder(app, server_url=args.server_url)
     window.show()
     app.exec()

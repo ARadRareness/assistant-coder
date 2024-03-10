@@ -52,6 +52,13 @@ python server.py
 python3 server.py
 ```
 
+Then run the desktop client with:
+
+```bash
+python client\desktop_client.py
+python3 client/desktop_client.py
+```
+
 ## Tests
 
 You can run the unit tests using the following command:
