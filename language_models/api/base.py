@@ -5,17 +5,9 @@ from language_models.model_response import ModelResponse
 
 
 class ApiModel:
-    def __init__(
-        self,
-        host_url: str,
-        host_port: str,
-        prompt_formatter: PromptFormatter,
-        model_path: str,
-    ):
-        self.host_url = host_url
-        self.host_port = host_port
-        self.prompt_formatter = prompt_formatter
+    def __init__(self, model_path: str, prompt_formatter: PromptFormatter):
         self.model_path = model_path
+        self.prompt_formatter = prompt_formatter
 
     def generate_text(
         self,

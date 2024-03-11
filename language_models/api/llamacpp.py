@@ -15,7 +15,10 @@ class LlamaCppModel(ApiModel):
         prompt_formatter: PromptFormatter,
         model_path: str,
     ):
-        super().__init__(host_url, host_port, prompt_formatter, model_path)
+        super().__init__(model_path, prompt_formatter)
+
+        self.host_url = host_url
+        self.host_port = host_port
 
     def generate_text(
         self,

@@ -9,6 +9,7 @@ from language_models.formatters.deepseek_coder import DeepseekCoderFormatter
 from language_models.formatters.mistral import MistralFormatter
 from language_models.formatters.base import PromptFormatter
 from language_models.formatters.orca_hashes import OrcaHashesFormatter
+from language_models.api.openai import OpenAIModel
 
 
 class ModelManager:
@@ -31,36 +32,48 @@ class ModelManager:
 
         available_models = self.get_available_models()
 
-        model_path = os.path.join("models", available_models[model_index])
+        model_identifier = available_models[model_index]
 
-        self.read_prompt_format(model_path)
+        # Check if the selected model is the OpenAI model
+        if model_identifier == "gpt-3.5-turbo":
+            # Load the OpenAI model
+            api_key = os.getenv(
+                "OPENAI_API_KEY"
+            )  # Ensure you have set this environment variable
+            if not api_key:
+                raise ValueError("OPENAI_API_KEY environment variable not set.")
+            openai_model = OpenAIModel(api_key=api_key, model_name="gpt-3.5-turbo")
+            self.models.append(openai_model)
+        else:
+            # Load a local model
+            model_path = os.path.join("models", model_identifier)
+            self.read_prompt_format(model_path)
+            print(self.llama_cpp_path)
 
-        print(self.llama_cpp_path)
-
-        # Start a new child process with the llama cpp path and the model path as arguments
-        self.popen = subprocess.Popen(
-            [
-                self.llama_cpp_path,
-                "--n-gpu-layers",
-                str(self.gpu_layers),
-                "--ctx-size",
-                str(self.context_window),
-                "--port",
-                str(self.start_port),
-                "-m",
-                model_path,
-            ],
-        )
-
-        prompt_formatter = self.get_prompt_formatter(available_models[model_index])
-        self.models.append(
-            LlamaCppModel(
-                "127.0.0.1",
-                str(self.start_port),
-                prompt_formatter,
-                available_models[model_index],
+            # Start a new child process with the llama cpp path and the model path as arguments
+            self.popen = subprocess.Popen(
+                [
+                    self.llama_cpp_path,
+                    "--n-gpu-layers",
+                    str(self.gpu_layers),
+                    "--ctx-size",
+                    str(self.context_window),
+                    "--port",
+                    str(self.start_port),
+                    "-m",
+                    model_path,
+                ],
             )
-        )
+
+            prompt_formatter = self.get_prompt_formatter(model_identifier)
+            self.models.append(
+                LlamaCppModel(
+                    "127.0.0.1",
+                    str(self.start_port),
+                    prompt_formatter,
+                    model_identifier,
+                )
+            )
 
         # TODO: Add check whether the process was started successfully or not
 
@@ -101,7 +114,9 @@ class ModelManager:
         self.load_model(model_index)
 
     def get_available_models(self) -> List[str]:
-        return list(filter(lambda f: f.endswith(".gguf"), os.listdir("models")))
+        models = list(filter(lambda f: f.endswith(".gguf"), os.listdir("models")))
+        models.append("gpt-3.5-turbo")  # Append the OpenAI model identifier
+        return models
 
     def __del__(self) -> None:
         # Terminate the process if it is still running

@@ -13,6 +13,9 @@ from language_models.model_conversation import ModelConversation
 from language_models.model_manager import ModelManager
 from language_models.model_message import MessageMetadata
 from language_models.audio.text_to_speech_engine import TextToSpeechEngine
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 
