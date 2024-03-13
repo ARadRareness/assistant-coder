@@ -90,6 +90,29 @@ class Model:
         )
 
 
+def execute_code(
+    conversation_id: str, code: str, ask_permission_to_run_tools: bool = False
+) -> str:
+    payload = {
+        "conversation_id": conversation_id,
+        "message": code,
+        "ask_permission_to_run_tools": ask_permission_to_run_tools,
+    }
+    response = requests.post(f"{BASE_URL}/code_interpreter", json=payload)
+
+    if response.status_code != 200:
+        print(f"Error executing code. status_code={response.status_code}")
+        return ""
+
+    data = response.json()
+
+    if data["result"]:
+        return data["response"]
+    else:
+        print(f"Error executing code: {data}")
+        return ""
+
+
 def start_conversation() -> str:
     response = requests.get(f"{BASE_URL}/start_new_conversation")
     if response.status_code == 200:

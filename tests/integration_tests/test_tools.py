@@ -154,6 +154,22 @@ class TestTools(TestBase):
             "The response mentions Christopher Paolini",
         )
 
+    @run_multiple_times(3)
+    def test_tool_code_interpreter(self):
+        model = Model(
+            single_message_mode=False,
+            use_tools=True,
+            use_reflections=False,
+            ask_permission_to_run_tools=False,
+        )
+        self.add_system_message(model)
+
+        response = model.generate_response(
+            "Run this code for me: print('Hello World!')"
+        )
+
+        self.assert_response_is_about(response, "The response contains 'Hello World!'")
+
     @run_multiple_times
     def test_list_available_tools(self):
         model = Model(single_message_mode=False, use_tools=True, use_reflections=False)

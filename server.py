@@ -8,6 +8,7 @@ from typing import Dict, List, Optional
 from flask import Flask, Response, jsonify, request, send_file  # type: ignore
 import uuid
 from language_models.memory_manager import MemoryManager
+from language_models.tool_manager import ToolManager
 
 from language_models.model_conversation import ModelConversation
 from language_models.model_manager import ModelManager
@@ -288,6 +289,37 @@ def tts() -> Response:
 
         return Response(generate(), mimetype="audio/wav")
 
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"result": False, "error_message": str(e)})
+
+
+@app.route("/code_interpreter", methods=["POST"])
+def code_interpreter() -> Response:
+    try:
+        data = request.get_json()
+        conversation_id = data.get("conversation_id")
+        user_message = data.get("message")
+        ask_permission_to_run_tools = data.get("ask_permission_to_run_tools")
+
+        if not conversation_id or not user_message:
+            raise ValueError("Missing conversation_id or message in the request.")
+
+        if conversation_id not in conversations:
+            raise ValueError(f"Conversation with id {conversation_id} not found.")
+
+        code_interpreter = ToolManager().get_target_tool({"tool": "code_interpreter"})
+
+        response: str = ""
+
+        if code_interpreter:
+            metadata = MessageMetadata(
+                datetime.datetime.now(), [], ask_permission_to_run_tools, ""
+            )
+            response = code_interpreter.action(user_message, metadata)
+            print(response)
+
+        return jsonify({"result": True, "response": response})
     except Exception as e:
         traceback.print_exc()
         return jsonify({"result": False, "error_message": str(e)})
