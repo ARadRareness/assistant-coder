@@ -1,4 +1,5 @@
 from typing import Any, Dict, List
+from language_models.api.base import ApiModel
 from language_models.model_message import MessageMetadata, ModelMessage
 from language_models.tools.base_tool import BaseTool
 
@@ -11,7 +12,13 @@ class NothingTool(BaseTool):
             [],
         )
 
-    def action(self, arguments: Dict[str, Any], metadata: MessageMetadata) -> str:
+    def action(
+        self,
+        arguments: Dict[str, Any],
+        model: ApiModel,
+        messages: List[ModelMessage],
+        metadata: MessageMetadata,
+    ) -> str:
         return ""
 
     def get_example_messages(self) -> List[ModelMessage]:

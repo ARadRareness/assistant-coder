@@ -1,5 +1,5 @@
 import json, subprocess, sys
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple, List
 from language_models.api.base import ApiModel
 from language_models.constants import JSON_ERROR_MESSAGE
 from language_models.helpers.json_fixer import fix_json_errors
@@ -26,6 +26,8 @@ class ToolManager:
                 content += " AVAILABLE ARGUMENTS\n"
                 for argument in arguments:
                     content += f" {argument[0]} - {argument[1]}\n"
+            else:
+                content += "No arguments available for this tool."
             content += "\n"
 
         content += "\n\nAnswer with the optimal tool and arguments to solve the provided problem. It is essential that you use the best tool and arguments to solve the problem."
@@ -91,13 +93,13 @@ class ToolManager:
             else:
                 raise Exception(f"Failed to fix JSON: {handled_text}")
 
-    def parse_and_execute(
+    def parse_tool(
         self, model: ApiModel, response: ModelResponse, metadata: MessageMetadata
-    ) -> Tuple[str, str]:
-        response_text = ""
-
+    ) -> Tuple[Optional[BaseTool], Dict[str, Any]]:
+        response_text = response.get_text()
         try:
-            command, handled_text = self.parse_json(model, response, metadata)
+            command, _ = self.parse_json(model, response, metadata)
+            print("COMMAND", command)
 
             if not "tool" in command:
                 print(f"MISSING tool in: {response_text}")
@@ -110,33 +112,43 @@ class ToolManager:
 
             target_tool = self.get_target_tool(command)
 
-            print("COMMAND", command)
+            return target_tool, command
 
-            if target_tool:
+        except Exception as e:
+            print(f"FAILED TO PARSE: {response_text}")
+            print(f"Exception message: {str(e)}")
+            return None, {}
+
+    def retrieve_tool_output(
+        self,
+        model: ApiModel,
+        max_tokens: int,
+        messages: List[ModelMessage],
+        use_metadata: bool = False,
+    ) -> str:
+        if messages:
+            tool_conversation = self.get_tool_conversation(messages[-1])
+            metadata = messages[-1].get_metadata()
+
+            response = model.generate_text(
+                tool_conversation, max_tokens=max_tokens, use_metadata=use_metadata
+            )
+
+            tool, command = self.parse_tool(model, response, metadata)
+
+            if tool:
                 if metadata.ask_permission_to_run_tools:
-                    if target_tool.ask_permission_to_run:
-                        permission_message = target_tool.ask_permission_message(
+                    if tool.ask_permission_to_run:
+                        permission_message = tool.ask_permission_message(
                             command["arguments"], metadata
                         )
 
                         if not permission_message:
                             permission_message = "UNKNOWN PERMISSION MESSAGE"
 
-                        if not self.get_user_permission(permission_message):
-                            print(f"User denied permission to run {target_tool.name}")
-                            return "", handled_text
+                        if not tool.get_user_permission(permission_message):
+                            print(f"User denied permission to run {tool.name}")
+                            return ""
 
-                return target_tool.action(command["arguments"], metadata), handled_text
-            else:
-                return "", handled_text
-
-        except Exception as e:
-            print(f"FAILED TO PARSE: {response_text}")
-            print(f"Exception message: {str(e)}")
-            return JSON_ERROR_MESSAGE, str(e)
-
-    def get_user_permission(self, message: str):
-        result = subprocess.call(
-            [sys.executable, "language_models/helpers/permission_notifier.py", message]
-        )
-        return result == 0
+                return tool.action(command["arguments"], model, messages, metadata)
+        return ""

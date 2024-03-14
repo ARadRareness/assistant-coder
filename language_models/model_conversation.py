@@ -157,20 +157,9 @@ class ModelConversation:
         messages: list[ModelMessage],
         use_metadata: bool = False,
     ) -> None:
-        last_message = messages[-1]
-        tool_messages = self.tool_manager.get_tool_conversation(last_message)
-        response = model.generate_text(
-            tool_messages, max_tokens=max_tokens, use_metadata=use_metadata
+        output = self.tool_manager.retrieve_tool_output(
+            model, max_tokens, messages, use_metadata
         )
-
-        output: Optional[str] = None
-
-        for _ in range(JSON_PARSE_RETRY_COUNT):
-            output, _ = self.tool_manager.parse_and_execute(
-                model, response, tool_messages[-1].get_metadata()
-            )
-            if output != JSON_ERROR_MESSAGE:
-                break
 
         if output and output != JSON_ERROR_MESSAGE:
             messages[-1].get_metadata().set_tool_output(output)

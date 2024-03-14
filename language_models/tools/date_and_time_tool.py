@@ -1,5 +1,6 @@
 import datetime
 from typing import Any, Dict, List
+from language_models.api.base import ApiModel
 
 from language_models.model_message import MessageMetadata, ModelMessage
 from language_models.tools.base_tool import BaseTool
@@ -13,7 +14,13 @@ class DateAndTimeTool(BaseTool):
             [],
         )
 
-    def action(self, arguments: Dict[str, Any], metadata: MessageMetadata) -> str:
+    def action(
+        self,
+        arguments: Dict[str, Any],
+        model: ApiModel,
+        messages: List[ModelMessage],
+        metadata: MessageMetadata,
+    ) -> str:
         return (
             "The current date and time is: "
             + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")

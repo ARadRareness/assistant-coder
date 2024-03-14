@@ -1,6 +1,7 @@
 from typing import Any, Dict, List
 import requests
 import bs4
+from language_models.api.base import ApiModel
 from language_models.model_message import MessageMetadata, ModelMessage
 from language_models.tools.base_tool import BaseTool
 
@@ -19,7 +20,13 @@ class BrowseInternetTool(BaseTool):
             True,
         )
 
-    def action(self, arguments: Dict[str, Any], metadata: MessageMetadata) -> str:
+    def action(
+        self,
+        arguments: Dict[str, Any],
+        model: ApiModel,
+        messages: List[ModelMessage],
+        metadata: MessageMetadata,
+    ) -> str:
         url = self.get_url_argument(arguments)
 
         if not url:
@@ -28,9 +35,9 @@ class BrowseInternetTool(BaseTool):
 
         print(f"BROWSE INTERNET with url {url}!")
 
-        response = requests.get(url)
-        response.raise_for_status()
-        soup = bs4.BeautifulSoup(response.text, "html.parser")
+        web_response = requests.get(url)
+        web_response.raise_for_status()
+        soup = bs4.BeautifulSoup(web_response.text, "html.parser")
 
         text_content = soup.get_text()
         return f"WEBPAGE CONTENT OF URL {url}: {text_content}"

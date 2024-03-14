@@ -1,40 +1,72 @@
 import subprocess
 import sys
 from typing import Any, Dict, List
-from language_models.model_message import MessageMetadata, ModelMessage
+from language_models.api.base import ApiModel
+from language_models.model_message import MessageMetadata, ModelMessage, Role
 from language_models.tools.base_tool import BaseTool
+import tempfile
+import os
 
 
 class CodeInterpreterTool(BaseTool):
     def __init__(self):
         super().__init__(
             name="code_interpreter",
-            description="Using this tool, you are able to execute Python code.",
-            available_arguments=[
-                (
-                    "CODE",
-                    "(MANDATORY) specifies the Python code to execute.",
-                )
-            ],
-            ask_permission_to_run=True,
+            description="Using this tool, you are able to execute Python code to solve problems.",
+            available_arguments=[],
+            ask_permission_to_run=False,
         )
 
-    def action(self, arguments: Dict[str, Any], metadata: MessageMetadata) -> str:
-        code = self.get_code_argument(arguments)
-
-        try:
-            output = subprocess.run(
-                [sys.executable, "-c", code], capture_output=True, text=True, check=True
-            )
-            return f'Explain your answer using the following output result of the python code: "{output.stdout}"'
-        except subprocess.CalledProcessError as e:
-            return f"Error executing code: {e.output}"
-
-    def ask_permission_message(
-        self, arguments: Dict[str, Any], metadata: MessageMetadata
+    def action(
+        self,
+        arguments: Dict[str, Any],
+        model: ApiModel,
+        messages: List[ModelMessage],
+        metadata: MessageMetadata,
     ) -> str:
-        code = self.get_code_argument(arguments)
+        code_response = model.generate_text(
+            messages
+            + [
+                ModelMessage(
+                    Role.SYSTEM,
+                    f"You are an expert at solving problems using Python.",
+                    metadata,
+                ),
+                ModelMessage(
+                    Role.USER,
+                    f"Write python code to solve the problem described in the previous conversation.",
+                    metadata,
+                ),
+            ]
+        )
+        code = self.parse_code(code_response.get_text())
 
+        if metadata.ask_permission_to_run_tools:
+            if not self.get_user_permission(self.get_permission_message(code)):
+                return "User denied permission to run code_interpreter."
+
+        if code:
+            with tempfile.NamedTemporaryFile(suffix=".py", delete=False) as tmp_file:
+                tmp_file_name = tmp_file.name
+                tmp_file.write(code.encode("utf-8"))
+                tmp_file.flush()
+
+            try:
+                output = subprocess.run(
+                    [sys.executable, tmp_file_name],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                return f'When answering the user, pretend that you have executed Python code and received the following output: "{output.stdout}"'
+            except subprocess.CalledProcessError as e:
+                return f"Error executing code: {e.stderr}"
+            finally:
+                os.remove(tmp_file_name)
+        else:
+            return "No code to execute."
+
+    def get_permission_message(self, code: str) -> str:
         if code:
             return f"AC would like to execute the following Python code:\n\n{code}\n\nDo you want to allow this?"
         else:
@@ -42,13 +74,29 @@ class CodeInterpreterTool(BaseTool):
 
     def get_code_argument(self, arguments: Dict[str, Any]) -> str:
         if "CODE" in arguments:
-            return arguments["CODE"].replace("<", "").replace(">", "")
+            return arguments["CODE"].replace("\\\\n", "\n").replace('"""', '"')
         return ""
 
     def get_example_messages(self) -> List[ModelMessage]:
-        return self.get_example_dialogue(
-            """Run this code for me: 
-            print("Hello World!")
-            """,
-            '{"tool": "code_interpreter", "arguments": {"CODE": "print("Hello World!")"}}',
-        )
+        return []
+
+    def parse_code(self, message: str) -> str:
+        """
+        Parses the Python code from a language model's message, assuming the code is
+        presented in a markdown code block format.
+
+        Args:
+            message (str): The message containing the Python code.
+
+        Returns:
+            str: The extracted Python code.
+        """
+        # Looking for the start of the code block
+        start = message.find("```python")
+        if start != -1:
+            # Adjusting start to the actual beginning of the code
+            start += len("```python")
+            end = message.find("```", start)
+            if end != -1:
+                return message[start:end].strip()
+        return ""

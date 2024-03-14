@@ -1,4 +1,5 @@
 from typing import Any, Dict, List
+from language_models.api.base import ApiModel
 from language_models.helpers.tool_helper import load_available_tools
 
 from language_models.model_message import MessageMetadata, ModelMessage
@@ -17,7 +18,13 @@ class ListerTool(BaseTool):
         self.tools.append(self)
         self.tools = sorted(self.tools, key=lambda tool: tool.name)
 
-    def action(self, arguments: Dict[str, Any], metadata: MessageMetadata) -> str:
+    def action(
+        self,
+        arguments: Dict[str, Any],
+        model: ApiModel,
+        messages: List[ModelMessage],
+        metadata: MessageMetadata,
+    ) -> str:
         return "The following tools are available:\n" + "\n".join(
             [f"{tool.name} - {tool.description}" for tool in self.tools]
         )

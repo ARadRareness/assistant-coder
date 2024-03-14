@@ -1,6 +1,7 @@
 from typing import Any, Dict, List
 
 from duckduckgo_search import DDGS  # type: ignore
+from language_models.api.base import ApiModel  # type: ignore
 from language_models.model_message import MessageMetadata, ModelMessage
 from language_models.tools.base_tool import BaseTool
 
@@ -19,7 +20,13 @@ class SearchTool(BaseTool):
             True,
         )
 
-    def action(self, arguments: Dict[str, Any], metadata: MessageMetadata) -> str:
+    def action(
+        self,
+        arguments: Dict[str, Any],
+        model: ApiModel,
+        messages: List[ModelMessage],
+        metadata: MessageMetadata,
+    ) -> str:
         search_query = self.get_search_query_argument(arguments)
 
         if search_query:

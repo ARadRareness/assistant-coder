@@ -8,6 +8,7 @@ A system architecture for a completely offline AI assistant that amongst other t
 * Support for knowledge retrieval (using embeddings and vector stores).
 * Suggestion system where the assistant can suggest follow-up questions.
 * Safety system where the assistant asks for permission to access files and the internet.
+* A basic code interpreter for problem solving.
 * Support for using the clipboard as input to the assistant.
 * Streamed text to speech playback using XTTS v2 or 'say' command for Mac systems.
 * Simple gradio client for basic chatbot uses.

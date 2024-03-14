@@ -1,9 +1,19 @@
+import os
 import sys
 import tkinter
 from tkinter import messagebox
 
 
-def get_user_permission(message: str) -> bool:
+def read_file_content(file_path: str) -> str:
+    if not os.path.exists(file_path):
+        return ""
+    with open(file_path, "r") as file:
+        return file.read()
+
+
+def get_user_permission(file_path: str) -> bool:
+    message = read_file_content(file_path)
+
     # Create a Tkinter root window
     root = tkinter.Tk()
     # root.overrideredirect(1)
