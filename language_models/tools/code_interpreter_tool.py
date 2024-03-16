@@ -34,12 +34,18 @@ class CodeInterpreterTool(BaseTool):
                 ),
                 ModelMessage(
                     Role.USER,
-                    f"Write python code to solve the problem described in the previous conversation.",
+                    f"Write python code to solve the problem described in the earlier conversation.",
                     metadata,
                 ),
-            ]
+            ],
+            max_tokens=2000,
         )
+
+        print(("RESPONSE", code_response.get_text()))
+
         code = self.parse_code(code_response.get_text())
+
+        print(("CODE", code))
 
         if metadata.ask_permission_to_run_tools:
             if not self.get_user_permission(self.get_permission_message(code)):
