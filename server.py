@@ -14,6 +14,9 @@ from language_models.model_conversation import ModelConversation
 from language_models.model_manager import ModelManager
 from language_models.model_message import MessageMetadata
 from language_models.audio.text_to_speech_engine import TextToSpeechEngine
+
+from language_models.model_state import ModelState
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -22,7 +25,6 @@ app = Flask(__name__)
 
 conversations: Dict[str, ModelConversation] = {}
 
-model_manager: Optional[ModelManager] = None
 memory_manager: MemoryManager = MemoryManager()
 
 text_to_speech_engine: Optional[TextToSpeechEngine] = None
@@ -31,7 +33,14 @@ text_to_speech_engine: Optional[TextToSpeechEngine] = None
 @app.route("/start_new_conversation", methods=["GET"])
 def start_conversation() -> Response:
     conversation_id = str(uuid.uuid4())
-    conversations[conversation_id] = ModelConversation(memory_manager)
+    with ModelState.get_lock():
+        active_model = ModelState.get_active_model()
+        if not active_model:
+            raise ValueError("No model is available right now.")
+
+    conversations[conversation_id] = ModelConversation(
+        memory_manager, active_model.get_model_path()
+    )
     return jsonify({"conversation_id": conversation_id})
 
 
@@ -150,10 +159,7 @@ def get_model_info() -> Response:
         if conversation_id not in conversations:
             raise ValueError(f"Conversation with id {conversation_id} not found.")
 
-        if model_manager:
-            model_path = model_manager.models[0].model_path
-        else:
-            model_path = "MOCK_PATH"
+        model_path = conversations[conversation_id].get_model_path()
 
         return jsonify({"result": True, "info": {"path": model_path}})
 
@@ -167,14 +173,29 @@ def change_model() -> Response:
     try:
         data = request.get_json()
         model_name = data.get("model_name")
+        conversation_id = data.get("conversation_id")
+
+        if not conversation_id:
+            raise ValueError("Missing conversation_id parameter in the request.")
+
+        if conversation_id not in conversations:
+            raise ValueError(f"Conversation with id {conversation_id} not found.")
 
         if not model_name:
             raise ValueError("Missing model_name in the request.")
 
-        if not model_manager:
-            raise ValueError("No model manager found.")
+        with ModelState.get_lock():
+            model_manager = ModelState.get_model_manager()
 
-        model_manager.change_model(model_name)
+            if not model_manager:
+                raise ValueError("No model manager found.")
+
+            available_models = model_manager.get_available_models()
+            if model_name not in available_models:
+                raise ValueError(f"Model {model_name} not found.")
+
+            conversation = conversations[conversation_id]
+            conversation.set_model_path(model_name)
         return jsonify({"result": True})
     except Exception as e:
         traceback.print_exc()
@@ -184,14 +205,17 @@ def change_model() -> Response:
 @app.route("/get_available_models", methods=["GET"])
 def get_available_models() -> Response:
     try:
-        if model_manager:
-            return jsonify(
-                {"result": True, "models": model_manager.get_available_models()}
-            )
-        else:
-            return jsonify(
-                {"result": False, "error_message": "No model manager found."}
-            )
+        with ModelState.get_lock():
+            model_manager = ModelState.get_model_manager()
+
+            if model_manager:
+                return jsonify(
+                    {"result": True, "models": model_manager.get_available_models()}
+                )
+            else:
+                return jsonify(
+                    {"result": False, "error_message": "No model manager found."}
+                )
     except Exception as e:
         traceback.print_exc()
         return jsonify({"result": False, "error_message": str(e)})
@@ -227,37 +251,43 @@ def generate_response() -> Response:
 
         conversations[conversation_id].add_user_message(user_message, metadata)
 
-        if not model_manager:
-            raise ValueError("No model manager found.")
+        with ModelState.get_lock():
+            model_manager = ModelState.get_model_manager()
 
-        response = conversations[conversation_id].generate_message(
-            model_manager.models[0],
-            max_tokens,
-            single_message_mode,
-            use_metadata=True,
-            use_tools=use_tools,
-            use_reflections=use_reflections,
-            use_knowledge=use_knowledge,
-            ask_permission_to_run_tools=ask_permission_to_run_tools,
-        )
+            if not model_manager:
+                raise ValueError("No model manager found.")
 
-        if use_suggestions:
-            suggestions = []
-            for _ in range(2):
-                try:
-                    suggestions = conversations[conversation_id].generate_suggestions(
-                        model_manager.models[0]
-                    )
-                    break
-                except Exception as e:
-                    print(e)
-                    suggestions = []
+            model_path = conversations[conversation_id].get_model_path()
+            model_manager.change_model(model_path)
 
-            return jsonify(
-                {"result": True, "response": response, "suggestions": suggestions}
+            response = conversations[conversation_id].generate_message(
+                model_manager.active_models[0],
+                max_tokens,
+                single_message_mode,
+                use_metadata=True,
+                use_tools=use_tools,
+                use_reflections=use_reflections,
+                use_knowledge=use_knowledge,
+                ask_permission_to_run_tools=ask_permission_to_run_tools,
             )
-        else:
-            return jsonify({"result": True, "response": response})
+
+            if use_suggestions:
+                suggestions = []
+                for _ in range(2):
+                    try:
+                        suggestions = conversations[
+                            conversation_id
+                        ].generate_suggestions(model_manager.active_models[0])
+                        break
+                    except Exception as e:
+                        print(e)
+                        suggestions = []
+
+                return jsonify(
+                    {"result": True, "response": response, "suggestions": suggestions}
+                )
+            else:
+                return jsonify({"result": True, "response": response})
 
     except Exception as e:
         traceback.print_exc()
@@ -316,8 +346,23 @@ def code_interpreter() -> Response:
             metadata = MessageMetadata(
                 datetime.datetime.now(), [], ask_permission_to_run_tools, ""
             )
-            response = code_interpreter.action(user_message, metadata)
-            print(response)
+
+            with ModelState.get_lock():
+                model_manager = ModelState.get_model_manager()
+
+                if not model_manager:
+                    raise ValueError("No model manager found.")
+
+                model_path = conversations[conversation_id].get_model_path()
+                model_manager.change_model(model_path)
+
+                response = code_interpreter.action(
+                    {},
+                    model_manager.active_models[0],
+                    conversations[conversation_id].get_messages(),
+                    metadata,
+                )
+                print(response)
 
         return jsonify({"result": True, "response": response})
     except Exception as e:
@@ -379,8 +424,11 @@ if __name__ == "__main__":
         if not model_manager:
             print("Error: Model manager not found.")
             sys.exit(-1)
+        else:
+            ModelState.initialize(model_manager)
 
-        model_manager.load_model()
+        with ModelState.get_lock():
+            model_manager.load_model()
 
         import atexit
 

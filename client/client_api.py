@@ -42,7 +42,7 @@ class Model:
         return get_available_models()
 
     def change_model(self, model_name: str):
-        return change_model(model_name)
+        return change_model(self.conversation_id, model_name)
 
     def generate_response(
         self,
@@ -210,8 +210,8 @@ def get_available_models() -> Sequence[str]:
         return []
 
 
-def change_model(model_name: str):
-    payload = {"model_name": model_name}
+def change_model(conversation_id: str, model_name: str):
+    payload = {"conversation_id": conversation_id, "model_name": model_name}
     response = requests.post(f"{BASE_URL}/change_model", json=payload)
 
     if response.status_code != 200:

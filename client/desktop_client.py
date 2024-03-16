@@ -389,6 +389,8 @@ class AssistantCoder(QMainWindow):
             pass
 
     def change_model(self):
+        if not self.conversation_id:
+            self.conversation_id = client_api.start_conversation()
         dialog = ChangeModelDialog(self)
         if dialog.exec() == QDialog.Accepted:  # type: ignore
             self.add_system_message()
@@ -441,11 +443,14 @@ class ChangeModelDialog(QDialog):
         layout.addWidget(self.cancel_button)
         self.setLayout(layout)
 
+        self._parent = parent
+
     def change(self):
         # Retrieve the values from the line edits and trigger the download method
         model_name = self.model_combo_box.currentText()
         self.accept()
-        client_api.change_model(model_name)
+        if self._parent:
+            client_api.change_model(self._parent.conversation_id, model_name)
 
 
 class CommandTextEdit(QTextEdit):

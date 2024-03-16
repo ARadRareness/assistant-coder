@@ -9,6 +9,9 @@ class ApiModel:
         self.model_path = model_path
         self.prompt_formatter = prompt_formatter
 
+    def get_model_path(self) -> str:
+        return self.model_path
+
     def generate_text(
         self,
         messages: Sequence[ModelMessage],

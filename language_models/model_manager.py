@@ -1,5 +1,6 @@
 import os
 import subprocess
+import time
 from typing import List
 from language_models.api.base import ApiModel
 
@@ -19,7 +20,7 @@ class ModelManager:
         self.popen = None
         self.gpu_layers = 9001
         self.context_window = 2048
-        self.models: List[ApiModel] = []
+        self.active_models: List[ApiModel] = []
 
     def model_is_loaded(self) -> bool:
         return self.popen != None
@@ -28,7 +29,7 @@ class ModelManager:
         if self.popen:
             # Terminate the existing process
             self.popen.terminate()
-            self.models.pop()
+            self.active_models.pop()
 
         available_models = self.get_available_models()
 
@@ -43,7 +44,7 @@ class ModelManager:
             if not api_key:
                 raise ValueError("OPENAI_API_KEY environment variable not set.")
             openai_model = OpenAIModel(api_key=api_key, model_name="gpt-3.5-turbo")
-            self.models.append(openai_model)
+            self.active_models.append(openai_model)
         else:
             # Load a local model
             model_path = os.path.join("models", model_identifier)
@@ -66,7 +67,7 @@ class ModelManager:
             )
 
             prompt_formatter = self.get_prompt_formatter(model_identifier)
-            self.models.append(
+            self.active_models.append(
                 LlamaCppModel(
                     "127.0.0.1",
                     str(self.start_port),
@@ -74,7 +75,8 @@ class ModelManager:
                     model_identifier,
                 )
             )
-
+            # TODO: Replace this sleep with an actual check for when the model is fully loaded
+            time.sleep(10)
         # TODO: Add check whether the process was started successfully or not
 
     def read_prompt_format(self, model_path: str) -> str:
@@ -105,6 +107,10 @@ class ModelManager:
             return PromptFormatter()
 
     def change_model(self, model_path: str) -> None:
+        for model in self.active_models:
+            if model.get_model_path() == model_path:
+                return
+
         model_index = self.get_available_models().index(model_path)
 
         if model_index == -1:

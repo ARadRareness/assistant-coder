@@ -1,5 +1,5 @@
 import datetime
-from typing import List, Optional, Sequence
+from typing import List, Sequence
 
 from language_models.api.base import ApiModel
 from language_models.constants import JSON_ERROR_MESSAGE, JSON_PARSE_RETRY_COUNT
@@ -12,12 +12,22 @@ from language_models.tool_manager import ToolManager
 
 class ModelConversation:
     def __init__(
-        self, memory_manager: MemoryManager, single_message_mode: bool = False
+        self,
+        memory_manager: MemoryManager,
+        model_path: str,
+        single_message_mode: bool = False,
     ):
         self.messages: List[ModelMessage] = []
         self.single_message_mode: bool = single_message_mode
         self.tool_manager: ToolManager = ToolManager()
         self.memory_manager: MemoryManager = memory_manager
+        self.model_path: str = model_path
+
+    def get_model_path(self) -> str:
+        return self.model_path
+
+    def set_model_path(self, new_model_path: str):
+        self.model_path = new_model_path
 
     def get_messages(self, single_message_mode: bool = False) -> List[ModelMessage]:
         if not self.messages:

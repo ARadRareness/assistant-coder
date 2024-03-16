@@ -60,6 +60,8 @@ python client\desktop_client.py
 python3 client/desktop_client.py
 ```
 
+To use the gpt-3.5-turbo model, rename .env_defaults to .env and add a OpenAI API key to it.
+
 ## Tests
 
 You can run the unit tests using the following command:
