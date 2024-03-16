@@ -1,6 +1,6 @@
 import subprocess
 import sys
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 from language_models.api.base import ApiModel
 from language_models.model_message import MessageMetadata, ModelMessage, Role
 from language_models.tools.base_tool import BaseTool
@@ -24,53 +24,81 @@ class CodeInterpreterTool(BaseTool):
         messages: List[ModelMessage],
         metadata: MessageMetadata,
     ) -> str:
-        code_response = model.generate_text(
-            messages
-            + [
-                ModelMessage(
-                    Role.SYSTEM,
-                    f"You are an expert at solving problems using Python.",
-                    metadata,
-                ),
-                ModelMessage(
-                    Role.USER,
-                    f"Write python code to solve the problem described in the earlier conversation.",
-                    metadata,
-                ),
-            ],
-            max_tokens=2000,
-        )
+        coding_conversation = messages + [
+            ModelMessage(
+                Role.SYSTEM,
+                f"You are an expert at solving problems using Python.",
+                metadata,
+            ),
+            ModelMessage(
+                Role.USER,
+                f"Write python code to solve the problem described in the earlier conversation.",
+                metadata,
+            ),
+        ]
 
-        print(("RESPONSE", code_response.get_text()))
+        tries = 3
+        for _ in range(tries):
+            code_response = model.generate_text(
+                messages=coding_conversation,
+                max_tokens=2000,
+            )
 
-        code = self.parse_code(code_response.get_text())
+            print(("RESPONSE", code_response.get_text()))
 
-        print(("CODE", code))
+            code = self.parse_code(code_response.get_text())
 
-        if metadata.ask_permission_to_run_tools:
-            if not self.get_user_permission(self.get_permission_message(code)):
-                return "User denied permission to run code_interpreter."
+            print(("CODE", code))
 
-        if code:
-            with tempfile.NamedTemporaryFile(suffix=".py", delete=False) as tmp_file:
-                tmp_file_name = tmp_file.name
-                tmp_file.write(code.encode("utf-8"))
-                tmp_file.flush()
+            if code:
+                if (
+                    metadata.ask_permission_to_run_tools
+                    and not self.get_user_permission(self.get_permission_message(code))
+                ):
+                    return "User denied permission to run code_interpreter."
 
-            try:
-                output = subprocess.run(
-                    [sys.executable, tmp_file_name],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                )
-                return f'When answering the user, pretend that you have executed Python code and received the following output: "{output.stdout}"'
-            except subprocess.CalledProcessError as e:
-                return f"Error executing code: {e.stderr}"
-            finally:
-                os.remove(tmp_file_name)
-        else:
-            return "No code to execute."
+                result, result_code = self.execute_python_code(code)
+                if result_code == 0:
+                    return result
+                else:
+                    coding_conversation.append(
+                        ModelMessage(Role.USER, result, metadata)
+                    )
+            else:
+                return "Error executing code."
+
+        return "No code to execute."
+
+    def execute_python_code(self, code: str) -> Tuple[str, int]:
+        """
+        Executes the given Python code in a temporary file and captures the output.
+
+        Args:
+            code (str): The Python code to execute.
+
+        Returns:
+            str: The output of the executed code or an error message.
+        """
+        with tempfile.NamedTemporaryFile(suffix=".py", delete=False) as tmp_file:
+            tmp_file_name = tmp_file.name
+            tmp_file.write(code.encode("utf-8"))
+            tmp_file.flush()
+
+        try:
+            output = subprocess.run(
+                [sys.executable, tmp_file_name],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            return (
+                f'When answering the user, pretend that you have executed Python code and received the following output: "{output.stdout}"',
+                0,
+            )
+        except subprocess.CalledProcessError as e:
+            return f"Error executing code: {e.stderr}", -1
+        finally:
+            os.remove(tmp_file_name)
 
     def get_permission_message(self, code: str) -> str:
         if code:
