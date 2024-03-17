@@ -1,6 +1,5 @@
 import os
 import subprocess
-import time
 from typing import List
 from language_models.api.base import ApiModel
 
@@ -64,7 +63,21 @@ class ModelManager:
                     "-m",
                     model_path,
                 ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                universal_newlines=True,
             )
+
+            while True:
+                if self.popen.stdout:
+                    line = self.popen.stdout.readline()
+                    print(line, end="")  # You can also log this instead of printing
+                    if "Available slots:" in line:
+                        break
+                else:
+                    return
 
             prompt_formatter = self.get_prompt_formatter(model_identifier)
             self.active_models.append(
@@ -75,9 +88,7 @@ class ModelManager:
                     model_identifier,
                 )
             )
-            # TODO: Replace this sleep with an actual check for when the model is fully loaded
-            time.sleep(10)
-        # TODO: Add check whether the process was started successfully or not
+            # No need for sleep here as we wait for the specific output
 
     def read_prompt_format(self, model_path: str) -> str:
         from gguf import GGUFReader

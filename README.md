@@ -3,8 +3,10 @@
 A system architecture for a completely offline AI assistant that amongst other things can be used to chat and generate coding solutions using large language models.
 
 ## Features
-* Flask server that handles multiple conversations.
-* Support for simple tools (browse/search web, read files, retrieve time and date).
+* Support for local GGUF models through a llama.cpp setup.
+* Support for GPT-3.5 Turbo model through the OpenAI API.
+* Flask server that handles multiple simultaneous conversations.
+* Support for basic tools (browse/search web, read files, retrieve time and date).
 * Support for knowledge retrieval (using embeddings and vector stores).
 * Suggestion system where the assistant can suggest follow-up questions.
 * Safety system where the assistant asks for permission to access files and the internet.
@@ -60,7 +62,7 @@ python client\desktop_client.py
 python3 client/desktop_client.py
 ```
 
-To use the gpt-3.5-turbo model, rename .env_defaults to .env and add a OpenAI API key to it.
+To use the GPT-3.5 Turbo model, rename .env_defaults to .env and add an OpenAI API key to it and from the desktop client change the model to "gpt-3.5-turbo".
 
 ## Tests
 
