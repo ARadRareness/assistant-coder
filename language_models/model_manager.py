@@ -84,11 +84,15 @@ class ModelManager:
             while True:
                 if self.popen.stdout:
                     line = self.popen.stdout.readline()
-                    print(line, end="")  # You can also log this instead of printing
-                    if "Available slots:" in line:
+                    print(line, end="")
+                    if "llama_new_context_with_model: graph splits" in line:
                         break
                 else:
                     return
+
+            # Close the stdout pipe after the while loop to allow normal process output
+            if self.popen.stdout:
+                self.popen.stdout.close()
 
             prompt_formatter = self.get_prompt_formatter(model_identifier)
             self.active_models.append(
