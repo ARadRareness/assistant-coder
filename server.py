@@ -1,8 +1,8 @@
 import datetime
 import os
 import sys
+import shutil
 import traceback
-import yaml
 import struct
 from typing import Dict, List, Optional
 from flask import Flask, Response, jsonify, request, send_file  # type: ignore
@@ -18,6 +18,9 @@ from language_models.audio.text_to_speech_engine import TextToSpeechEngine
 from language_models.model_state import ModelState
 
 from dotenv import load_dotenv
+
+if not os.path.exists(".env"):
+    shutil.copy(".env_defaults", ".env")
 
 load_dotenv()
 
@@ -398,16 +401,6 @@ def _get_model_manager(llama_cpp_path: str, mock_llama: bool = False):
         return model_manager
 
 
-def read_config() -> Dict[str, str]:
-    if os.path.exists("config.yaml"):
-        with open("config.yaml", "r") as file:
-            config = yaml.safe_load(file)
-
-            if config:
-                return config
-    return {}
-
-
 mock_llama = False
 
 if __name__ == "__main__":
@@ -416,9 +409,7 @@ if __name__ == "__main__":
     if mock_llama:
         print("WARNING: Mock Mode")
     else:
-
-        config = read_config()
-        llama_cpp_path = config.get("llama_cpp_path", "bin")
+        llama_cpp_path = os.getenv("LLAMA_CPP_PATH", "bin")
         model_manager = _get_model_manager(llama_cpp_path, mock_llama)
 
         if not model_manager:

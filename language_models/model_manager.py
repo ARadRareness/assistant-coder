@@ -1,5 +1,6 @@
 import os
 import subprocess
+import dotenv
 from typing import List
 from language_models.api.base import ApiModel
 
@@ -24,7 +25,17 @@ class ModelManager:
     def model_is_loaded(self) -> bool:
         return self.popen != None
 
-    def load_model(self, model_index: int = 0) -> None:
+    def load_model(self, model_index: int = -1) -> None:
+        if model_index == -1:
+            last_model_used = os.getenv("LAST_MODEL_USED", "")
+            available_models = self.get_available_models()
+            try:
+                model_index = available_models.index(last_model_used)
+            except ValueError:
+                model_index = (
+                    0  # Default to the first model if last_model_used is not found
+                )
+
         if self.popen:
             # Terminate the existing process
             self.popen.terminate()
@@ -89,6 +100,10 @@ class ModelManager:
                 )
             )
             # No need for sleep here as we wait for the specific output
+
+        dotenv_file = dotenv.find_dotenv()
+        if dotenv_file:
+            dotenv.set_key(dotenv_file, "LAST_MODEL_USED", model_identifier)
 
     def read_prompt_format(self, model_path: str) -> str:
         from gguf import GGUFReader
