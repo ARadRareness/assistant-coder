@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from language_models.api.base import ApiModel
 from language_models.helpers.json_parser import parse_json
 from language_models.model_message import ModelMessage, Role, MessageMetadata
@@ -18,37 +18,56 @@ def fix_json_errors(
 
 
 def fix_json_errors_manually(broken_json: str) -> str:
-    fixed_json = ""
+    parsed_arguments: List[str] = []
 
-    in_argument = False
-    using_single_quote_argument = False
+    in_argument_name = False
+    in_argument_value = False
+    using_single_quotes = False
+    using_int_value = False
+
+    argument_name = ""
+    argument_value = ""
 
     for c in broken_json:
-        if in_argument:
-            if using_single_quote_argument:
-                if c == "'":
-                    in_argument = False
-                    using_single_quote_argument = False
-                    fixed_json += '"'
-                else:
-                    fixed_json += c
-            elif c == '"':
-                in_argument = False
-                using_single_quote_argument = False
-                fixed_json += c
-            else:
-                fixed_json += c
-        else:
-            if c == '"':
-                in_argument = True
-                fixed_json += c
-            elif c == "'":
-                in_argument = True
-                using_single_quote_argument = True
-                fixed_json += '"'
-            else:
-                fixed_json += c
+        if in_argument_name or in_argument_value:
+            if (using_single_quotes and c == "'") or (
+                not using_single_quotes and c == '"'
+            ):
+                if in_argument_name:
+                    in_argument_name = False
+                    if not argument_name:
+                        argument_name = "NONE"
+                elif in_argument_value:
+                    in_argument_value = False
+                    parsed_arguments.append(f'"{argument_name}": "{argument_value}"')
+                    argument_name = ""
+                    argument_value = ""
+            elif using_int_value and c in ",}":
+                in_argument_value = False
+                parsed_arguments.append(f'"{argument_name}": {argument_value}')
+                argument_name = ""
+                argument_value = ""
 
+            else:
+                if in_argument_name:
+                    argument_name += c
+                elif in_argument_value:
+                    argument_value += c
+        else:
+            if c == '"' or c == "'":
+                if not argument_name:
+                    in_argument_name = True
+                else:
+                    in_argument_value = True
+
+                if c == "'":
+                    using_single_quotes = True
+            elif c in "0123456789":
+                using_int_value = True
+                in_argument_value = True
+                argument_value += c
+
+    fixed_json = "{" + ", ".join(parsed_arguments) + "}"
     return fixed_json
 
 
