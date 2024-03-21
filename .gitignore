@@ -168,3 +168,4 @@ models
 knowledge_base
 .cursorignore
 output/
+wavs/

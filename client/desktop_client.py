@@ -1,5 +1,6 @@
 import os
 import argparse
+import time
 from typing import Any, Callable, Optional, Sequence, Set
 
 from PySide6.QtWidgets import (
@@ -52,6 +53,8 @@ import traceback
 from pydub import AudioSegment  # type: ignore
 from pydub.playback import play  # type: ignore
 import io
+import queue
+from components.voice_input import VoiceInput
 
 
 class AssistantCoder(QMainWindow):
@@ -138,6 +141,8 @@ class AssistantCoder(QMainWindow):
 
         layout.addLayout(chat_layout)
 
+        app.aboutToQuit.connect(self.cleanup_before_exit)
+
     def add_checkable_menu_action(
         self,
         action_text: str,
@@ -208,6 +213,12 @@ class AssistantCoder(QMainWindow):
         self.use_tts_action = self.add_checkable_menu_action(
             "Use text to speech", window_menu, options_menu, checked_by_default=False
         )
+
+        # Add "Use voice input" option below "Use text to speech"
+        self.use_voice_input_action = self.add_checkable_menu_action(
+            "Use voice input", window_menu, options_menu, checked_by_default=False
+        )
+        self.use_voice_input_action.triggered.connect(self.toggle_voice_input)
 
         window_menu.addSeparator()
         options_menu.addSeparator()
@@ -305,6 +316,32 @@ class AssistantCoder(QMainWindow):
         # Display suggestions in a separate pop-up window, where the user can click on a suggestion to send it as a command
         self.suggestions_dialog.set_suggestions(suggestions)
         self.suggestions_dialog.show()
+
+    def toggle_voice_input(self, checked: bool):
+        if checked:
+            self.voice_input = VoiceInput()
+            self.voice_input_thread = threading.Thread(target=self.process_voice_input)
+            self.voice_input_thread.start()
+        else:
+            del self.voice_input
+            self.voice_input_thread.join()
+
+    def process_voice_input(self):
+        while hasattr(self, "voice_input"):
+            try:
+                time.sleep(0.1)
+                message: Optional[str] = self.voice_input.get_input()
+                if message:
+                    self.send_command(message)
+            except queue.Empty:
+                continue
+            except:
+                break
+
+    def cleanup_before_exit(self):
+        # Ensure voice input is turned off before exiting
+        if hasattr(self, "voice_input"):
+            self.toggle_voice_input(checked=False)
 
     def populate_tree(self, directory: str, parent_index: int):
         model: CustomFileSystemModel = self.centralWidget().layout().itemAt(0).widget().model()  # type: ignore

@@ -23,7 +23,7 @@ def fix_json_errors_manually(broken_json: str) -> str:
     in_argument_name = False
     in_argument_value = False
     using_single_quotes = False
-    using_int_value = False
+    using_nonstring_value = False
 
     argument_name = ""
     argument_value = ""
@@ -42,7 +42,7 @@ def fix_json_errors_manually(broken_json: str) -> str:
                     parsed_arguments.append(f'"{argument_name}": "{argument_value}"')
                     argument_name = ""
                     argument_value = ""
-            elif using_int_value and c in ",}":
+            elif using_nonstring_value and c in ",}":
                 in_argument_value = False
                 parsed_arguments.append(f'"{argument_name}": {argument_value}')
                 argument_name = ""
@@ -62,10 +62,16 @@ def fix_json_errors_manually(broken_json: str) -> str:
 
                 if c == "'":
                     using_single_quotes = True
-            elif c in "0123456789":
-                using_int_value = True
+            elif c in "0123456789nft":  # number, null, true, false
+                using_nonstring_value = True
                 in_argument_value = True
                 argument_value += c
+
+    if argument_name and argument_value:
+        if using_nonstring_value:
+            parsed_arguments.append(f'"{argument_name}": {argument_value}')
+        else:
+            parsed_arguments.append(f'"{argument_name}": "{argument_value}"')
 
     fixed_json = "{" + ", ".join(parsed_arguments) + "}"
     return fixed_json

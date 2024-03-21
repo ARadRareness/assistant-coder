@@ -14,7 +14,7 @@ class ToolManager:
         self.tools: Sequence[BaseTool] = load_available_tools()
 
     def get_tool_conversation(self, message: ModelMessage) -> Sequence[ModelMessage]:
-        content = "Using the user message and the available tools, reply with what tool and arguments you want to use to solve the problem."
+        content = "You are an expert at determining which tool is the best to use in order to solve the problem. Using the user message and the available tools, reply with what tool and arguments you want to use."
 
         content += "Available tools:\n"
 
@@ -29,7 +29,7 @@ class ToolManager:
                 content += "No arguments available for this tool."
             content += "\n"
 
-        content += "\n\nAnswer with the optimal tool and arguments to solve the provided problem. It is essential that you use the best tool and arguments to solve the problem."
+        content += "\n\nAnswer with the optimal tool and arguments to solve the provided problem. It is very important to me that you use the best tool and arguments to solve the problem."
 
         tool_system_message = ModelMessage(Role.SYSTEM, content, message.get_metadata())
 

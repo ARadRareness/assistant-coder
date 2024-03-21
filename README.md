@@ -13,6 +13,7 @@ A system architecture for a completely offline AI assistant that amongst other t
 * A basic code interpreter for problem solving.
 * Support for using the clipboard as input to the assistant.
 * Streamed text to speech playback using XTTS v2 or 'say' command for Mac systems.
+* Support for continuous voice input using faster-whisper.
 * Simple gradio client for basic chatbot uses.
 * PySide6 client for more advanced chatbot uses.
 
