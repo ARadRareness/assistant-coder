@@ -58,6 +58,8 @@ from components.voice_input import VoiceInput
 
 
 class AssistantCoder(QMainWindow):
+    use_local_whisper = False
+
     def __init__(self, app: QApplication, server_url: str = "http://127.0.0.1:17173"):
         super().__init__()
 
@@ -319,7 +321,7 @@ class AssistantCoder(QMainWindow):
 
     def toggle_voice_input(self, checked: bool):
         if checked:
-            self.voice_input = VoiceInput()
+            self.voice_input = VoiceInput(use_local_whisper=self.use_local_whisper)
             self.voice_input_thread = threading.Thread(target=self.process_voice_input)
             self.voice_input_thread.start()
         else:
@@ -332,6 +334,8 @@ class AssistantCoder(QMainWindow):
                 time.sleep(0.1)
                 message: Optional[str] = self.voice_input.get_input()
                 if message:
+                    if not self.use_local_whisper:
+                        message = client_api.transcribe_audio(message)
                     self.send_command(message)
             except queue.Empty:
                 continue

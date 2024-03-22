@@ -7,6 +7,10 @@ import struct
 from typing import Dict, List, Optional
 from flask import Flask, Response, jsonify, request, send_file  # type: ignore
 import uuid
+import hashlib
+
+from faster_whisper import WhisperModel
+
 from language_models.memory_manager import MemoryManager
 from language_models.tool_manager import ToolManager
 
@@ -31,6 +35,9 @@ conversations: Dict[str, ModelConversation] = {}
 memory_manager: MemoryManager = MemoryManager()
 
 text_to_speech_engine: Optional[TextToSpeechEngine] = None
+
+# Global variable for WhisperModel
+whisper_model = None
 
 
 @app.route("/start_new_conversation", methods=["GET"])
@@ -325,6 +332,60 @@ def tts() -> Response:
     except Exception as e:
         traceback.print_exc()
         return jsonify({"result": False, "error_message": str(e)})
+
+
+@app.route("/stt", methods=["POST"])
+def stt():
+    global whisper_model  # Use the global variable
+    if "file" not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"error": "No selected file"}), 400
+    if file and allowed_file(file.filename):
+        # Generate a unique filename using MD5 hash
+        content = file.read()
+        md5_hash = hashlib.md5(content).hexdigest()
+        filename = f"{md5_hash}.wav"
+        filepath = os.path.join("output", filename)
+
+        # Save the file temporarily
+        with open(filepath, "wb") as audio_file:
+            audio_file.write(content)
+
+        # Initialize Whisper model if it hasn't been already
+        if whisper_model is None:
+            whisper_model = WhisperModel(
+                "large-v2", device="cuda", compute_type="float16"
+            )
+
+        initial_whisper_prompt = "DEFAULT"
+        language = "en"
+
+        # Transcribe audio
+        segments, _info = whisper_model.transcribe(
+            filepath,
+            beam_size=5,
+            initial_prompt=initial_whisper_prompt,
+            language=language,
+            vad_filter=True,
+            # word_timestamps=True,
+        )
+        transcript = " ".join([x.text for x in segments])
+
+        # Clean up the saved file
+        os.remove(filepath)
+
+        return jsonify({"result": True, "transcript": transcript})
+
+    return jsonify({"result": False, "error_message": ""})
+
+
+def allowed_file(filename: Optional[str]) -> bool:
+    if filename:
+        return "." in filename and filename.rsplit(".", 1)[1].lower() in ["wav"]
+    else:
+        return False
 
 
 @app.route("/code_interpreter", methods=["POST"])

@@ -1,14 +1,20 @@
-from typing import Optional
-from faster_whisper import WhisperModel
-import numpy as np
-import pyaudio
-import webrtcvad
+try:
+    from typing import Optional
+    from faster_whisper import WhisperModel
+    import numpy as np
+    import pyaudio
+    import webrtcvad
 
-import datetime
-import os
-import queue
-import threading
-import wave
+    import datetime
+    import os
+    import queue
+    import threading
+    import wave
+
+    IMPORT_SUCCESS = True
+except ImportError as e:
+    print(e)
+    IMPORT_SUCCESS = False
 
 
 class ThreadSafeBoolean:
@@ -26,29 +32,38 @@ class ThreadSafeBoolean:
 
 
 class VoiceInput:
-    def __init__(self):
+    def __init__(self, use_local_whisper=True):
         self.message_queue = queue.Queue()
         self.quit_flag = ThreadSafeBoolean(False)
+        self.voice_input_thread = None
 
-        self.voice_input_thread = VoiceInputThread(self.message_queue, self.quit_flag)
+        if IMPORT_SUCCESS:
+            self.voice_input_thread = VoiceInputThread(
+                self.message_queue, self.quit_flag, use_local_whisper=use_local_whisper
+            )
 
     def __del__(self):
-        self.quit_flag.set(True)
-        self.voice_input_thread.join()
+        if self.voice_input_thread:
+            self.quit_flag.set(True)
+            self.voice_input_thread.join()
 
     def get_input(self) -> Optional[str]:
+        if not IMPORT_SUCCESS:
+            return None
         return self.message_queue.get(block=False)
 
 
 class VoiceInputThread(threading.Thread):
-    def __init__(self, message_queue, quit_flag, language="en"):
+    def __init__(self, message_queue, quit_flag, language="en", use_local_whisper=True):
         threading.Thread.__init__(self)
 
         self.message_queue = message_queue
         self.quit_flag = quit_flag
         self.language = language
+        self.use_local_whisper = use_local_whisper
 
-        self.model = WhisperModel("large-v2", device="cuda", compute_type="float16")
+        if self.use_local_whisper:
+            self.model = WhisperModel("large-v2", device="cuda", compute_type="float16")
 
         print("THREAD STARTED")
         self.daemon = True
@@ -76,7 +91,10 @@ class VoiceInputThread(threading.Thread):
             except:
                 None
             self.save_audio_to_wav(audio_data, fname)
-            text = self.generate_transcript(fname, initial_whisper_prompt).strip()
+            if self.use_local_whisper:
+                text = self.generate_transcript(fname, initial_whisper_prompt).strip()
+            else:
+                text = fname  # Directly use the filename if not using Whisper for transcription
 
             if not text:
                 os.remove(fname)
@@ -195,8 +213,8 @@ class VoiceInputThread(threading.Thread):
 if __name__ == "__main__":
     import time
 
-    # Create an instance of the VoiceInput class
-    voice_input = VoiceInput()
+    # Create an instance of the VoiceInput class with use_local_whisper set as needed
+    voice_input = VoiceInput(use_local_whisper=True)
 
     while True:
         time.sleep(0.1)

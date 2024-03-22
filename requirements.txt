@@ -15,6 +15,7 @@ python-dotenv
 
 TTS
 simpleaudio
+
 pydub
 faster-whisper
 webrtcvad

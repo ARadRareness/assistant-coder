@@ -318,6 +318,24 @@ def generate_response_with_suggestions(
     return response
 
 
+def transcribe_audio(audio_file_path: str) -> str:
+    url = f"{BASE_URL}/stt"
+    files = {"file": open(audio_file_path, "rb")}
+    response = requests.post(url, files=files)
+
+    if response.status_code != 200:
+        print(f"Error transcribing audio. status_code={response.status_code}")
+        return ""
+
+    data = response.json()
+
+    if data.get("result"):
+        return data.get("transcript", "")
+    else:
+        print(f"Error transcribing audio: {data.get('error_message')}")
+        return ""
+
+
 def _base_generate_response(
     conversation_id: str,
     user_message: str,
@@ -382,3 +400,5 @@ if __name__ == "__main__":
 
         for message in get_conversation(conversation_id):
             print(f"{message['role']}: {message['message']}")
+
+    print(transcribe_audio("wavs\\input_20240321_215405.wav"))
