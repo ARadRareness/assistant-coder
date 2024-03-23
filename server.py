@@ -9,7 +9,7 @@ from flask import Flask, Response, jsonify, request, send_file  # type: ignore
 import uuid
 import hashlib
 
-from faster_whisper import WhisperModel
+from faster_whisper import WhisperModel  # type: ignore
 
 from language_models.memory_manager import MemoryManager
 from language_models.tool_manager import ToolManager
@@ -363,7 +363,7 @@ def stt():
         language = "en"
 
         # Transcribe audio
-        segments, _info = whisper_model.transcribe(
+        segments, _info = whisper_model.transcribe(  # type: ignore
             filepath,
             beam_size=5,
             initial_prompt=initial_whisper_prompt,

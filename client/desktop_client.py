@@ -100,6 +100,9 @@ class AssistantCoder(QMainWindow):
 
         self.suggestions_dialog = SuggestionsDialog(self.send_command)
 
+        whisper_mode_str = os.getenv("CLIENT_WHISPER_MODE", "false").lower()
+        self.use_local_whisper = whisper_mode_str == "true"
+
     def init_ui(self):
         self.create_window_and_system_menu()
 
@@ -336,7 +339,9 @@ class AssistantCoder(QMainWindow):
                 if message:
                     if not self.use_local_whisper:
                         message = client_api.transcribe_audio(message)
-                    self.send_command(message)
+
+                    if message:
+                        self.send_command(message)
             except queue.Empty:
                 continue
             except:
@@ -548,8 +553,8 @@ class DownloadModelDialog(QDialog):
 
     def download(self):
         # Retrieve the values from the line edits and trigger the download method
-        repo_id = self.repo_id_edit.text()
-        filename = self.filename_edit.text()
+        repo_id = self.repo_id_edit.text().strip()
+        filename = self.filename_edit.text().strip()
         self.accept()  # Close the dialog
         self.assistant_coder.download_method(
             repo_id, filename

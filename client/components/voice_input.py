@@ -1,28 +1,28 @@
+import datetime
+import os
+import queue
+import threading
+import wave
+from typing import List, Optional
+
 try:
-    from typing import Optional
-    from faster_whisper import WhisperModel
+    from faster_whisper import WhisperModel  # type: ignore
     import numpy as np
     import pyaudio
-    import webrtcvad
-
-    import datetime
-    import os
-    import queue
-    import threading
-    import wave
+    import webrtcvad  # type: ignore
 
     IMPORT_SUCCESS = True
 except ImportError as e:
     print(e)
-    IMPORT_SUCCESS = False
+    IMPORT_SUCCESS = False  # type: ignore
 
 
 class ThreadSafeBoolean:
-    def __init__(self, initial_value=False):
+    def __init__(self, initial_value: bool = False):
         self._value = initial_value
         self._lock = threading.Lock()
 
-    def set(self, value):
+    def set(self, value: bool):
         with self._lock:
             self._value = value
 
@@ -32,8 +32,8 @@ class ThreadSafeBoolean:
 
 
 class VoiceInput:
-    def __init__(self, use_local_whisper=True):
-        self.message_queue = queue.Queue()
+    def __init__(self, use_local_whisper: bool = True):
+        self.message_queue = queue.Queue[str]()
         self.quit_flag = ThreadSafeBoolean(False)
         self.voice_input_thread = None
 
@@ -54,12 +54,18 @@ class VoiceInput:
 
 
 class VoiceInputThread(threading.Thread):
-    def __init__(self, message_queue, quit_flag, language="en", use_local_whisper=True):
+    def __init__(
+        self,
+        message_queue: queue.Queue[str],
+        quit_flag: ThreadSafeBoolean,
+        language: str = "en",
+        use_local_whisper: bool = True,
+    ):
         threading.Thread.__init__(self)
 
-        self.message_queue = message_queue
-        self.quit_flag = quit_flag
-        self.language = language
+        self.message_queue: queue.Queue[str] = message_queue
+        self.quit_flag: ThreadSafeBoolean = quit_flag
+        self.language: str = language
         self.use_local_whisper = use_local_whisper
 
         if self.use_local_whisper:
@@ -89,7 +95,7 @@ class VoiceInputThread(threading.Thread):
                 if not os.path.exists("wavs"):
                     os.mkdir("wavs")
             except:
-                None
+                pass
             self.save_audio_to_wav(audio_data, fname)
             if self.use_local_whisper:
                 text = self.generate_transcript(fname, initial_whisper_prompt).strip()
@@ -124,7 +130,7 @@ class VoiceInputThread(threading.Thread):
         vad = webrtcvad.Vad(vad_aggressiveness)
 
         # start recording audio
-        frames = []
+        frames: List[bytes] = []
         speech_timeout = 0
 
         # The recording usually get some trash at the beginning which we want to skip
@@ -138,10 +144,10 @@ class VoiceInputThread(threading.Thread):
             data = stream.read(chunk)
 
             # convert the audio data to a numpy array
-            signal = np.frombuffer(data, dtype=np.int16)
+            signal = np.frombuffer(data, dtype=np.int16)  # type: ignore
 
             # check if the signal contains speech
-            if vad.is_speech(signal, sample_rate=sample_rate):
+            if vad.is_speech(signal, sample_rate=sample_rate):  # type: ignore
                 # reset the speech timeout counter
                 speech_timeout = 0
                 has_speech = True
@@ -166,7 +172,7 @@ class VoiceInputThread(threading.Thread):
         # return the recorded audio data
         return b"".join(frames)
 
-    def save_audio_to_wav(self, audio_data, filename):
+    def save_audio_to_wav(self, audio_data: bytes, filename: str):
         # set the parameters for the WAV file
         nchannels = 1  # mono audio
         sampwidth = 2  # 16-bit audio
@@ -180,8 +186,8 @@ class VoiceInputThread(threading.Thread):
             )
             wav_file.writeframes(audio_data)
 
-    def generate_transcript(self, fname, initial_whisper_prompt):
-        segments, _info = self.model.transcribe(
+    def generate_transcript(self, fname: str, initial_whisper_prompt: str) -> str:
+        segments, _info = self.model.transcribe(  # type: ignore
             fname,
             beam_size=5,
             initial_prompt=initial_whisper_prompt,
@@ -194,10 +200,10 @@ class VoiceInputThread(threading.Thread):
     def get_input_devices(self):
         p = pyaudio.PyAudio()
         info = p.get_host_api_info_by_index(0)
-        num_devices = info.get("deviceCount")
+        num_devices: int = info.get("deviceCount")  # type: ignore
         for i in range(num_devices):
             if (
-                p.get_device_info_by_host_api_device_index(0, i).get("maxInputChannels")
+                p.get_device_info_by_host_api_device_index(0, i).get("maxInputChannels")  # type: ignore
                 > 0
             ):
                 print(
@@ -223,5 +229,4 @@ if __name__ == "__main__":
             if result:
                 print(result)
         except Exception as e:
-            None
-            # print(e)
+            pass
