@@ -42,19 +42,29 @@ from PySide6.QtCore import (
 
 from huggingface_hub import hf_hub_download  # type:ignore
 
-from components.suggestions_dialog import SuggestionsDialog
-from components.custom_file_system_model import CustomFileSystemModel
+from client.components.suggestions_dialog import SuggestionsDialog
+from client.components.custom_file_system_model import CustomFileSystemModel
 
-import client_api
+from client import client_api
 import threading
 import traceback
+
+import shutil
 
 
 from pydub import AudioSegment  # type: ignore
 from pydub.playback import play  # type: ignore
 import io
 import queue
-from components.voice_input import VoiceInput
+from client.components.voice_input import VoiceInput
+from language_models.audio.text_to_speech_engine import TextToSpeechEngine
+
+from dotenv import load_dotenv
+
+if not os.path.exists(".env"):
+    shutil.copy(".env_defaults", ".env")
+
+load_dotenv()
 
 
 class AssistantCoder(QMainWindow):
@@ -100,8 +110,13 @@ class AssistantCoder(QMainWindow):
 
         self.suggestions_dialog = SuggestionsDialog(self.send_command)
 
-        whisper_mode_str = os.getenv("CLIENT_WHISPER_MODE", "false").lower()
-        self.use_local_whisper = whisper_mode_str == "true"
+        self.use_local_whisper = (
+            os.getenv("USE_LOCAL_WHISPER", "false").lower() == "true"
+        )
+
+        self.use_local_tts = os.getenv("USE_LOCAL_TTS", "false").lower() == "true"
+
+        self.text_to_speech_engine: Optional[TextToSpeechEngine] = None
 
     def init_ui(self):
         self.create_window_and_system_menu()
@@ -627,11 +642,24 @@ class MessageSender(QObject):
                     self.message_received.emit("AC: " + response)
 
                     if use_tts:
-                        for tts_response in client_api.generate_tts(response):
-                            if tts_response:
-                                audio_stream = io.BytesIO(tts_response)
-                                audio = AudioSegment.from_file(audio_stream, format="wav")  # type: ignore
-                                play(audio)  # type: ignore
+                        if self._parent.use_local_tts:
+                            if not self._parent.text_to_speech_engine:
+                                self._parent.text_to_speech_engine = (
+                                    TextToSpeechEngine()
+                                )
+                            wav_file_paths = self._parent.text_to_speech_engine.text_to_speech_with_split(
+                                response
+                            )
+                            for path in wav_file_paths:
+                                with open(path, "rb") as f:
+                                    audio = AudioSegment.from_file(f, format="wav")  # type: ignore
+                                    play(audio)  # type: ignore
+                        else:
+                            for tts_response in client_api.generate_tts(response):
+                                if tts_response:
+                                    audio_stream = io.BytesIO(tts_response)
+                                    audio = AudioSegment.from_file(audio_stream, format="wav")  # type: ignore
+                                    play(audio)  # type: ignore
 
                     if suggestions:
                         self.suggestions_received.emit(suggestions)

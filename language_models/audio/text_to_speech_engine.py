@@ -29,9 +29,10 @@ class TextToSpeechEngine:
             if self.tts is None:
                 self.text_to_speech_mac(text, output_path)
             else:
+                speaker_wav = os.getenv("AUDIO_EXAMPLE", "example_audio.wav")
                 self.tts.tts_to_file(  # type: ignore
                     text,
-                    speaker_wav="example_audio.wav",
+                    speaker_wav=speaker_wav,
                     file_path=output_path,
                     language="en",
                 )
