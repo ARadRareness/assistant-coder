@@ -18,27 +18,30 @@ class MistralFormatter(PromptFormatter):
         prompt: List[Union[int, str]] = [self.BOS]
 
         system_message = ""
+        system_message_latest = ""
         tool_message = ""
 
-        for message in messages:
+        for i, message in enumerate(messages):
             if message.is_user_message():
-                prompt.append(
-                    self._user_message(
-                        message, use_metadata, system_message, tool_message
+                if i == len(messages) - 1:
+                    prompt.append(
+                        self._user_message(message, use_metadata, system_message_latest)
                     )
-                )
+                else:
+                    prompt.append(
+                        self._user_message(message, use_metadata, system_message)
+                    )
                 system_message = ""
-                tool_message = ""
+
             elif message.is_assistant_message():
                 prompt.append(f"{message.get_message(use_metadata)}")
                 prompt.append(self.EOS)
             elif message.is_system_message():
                 system_message = message.get_message(use_metadata)
+                system_message_latest = system_message
 
         if system_message or tool_message:
-            prompt.append(
-                self._user_message(None, use_metadata, system_message, tool_message)
-            )
+            prompt.append(self._user_message(None, use_metadata, system_message))
         return prompt
 
     def _user_message(
@@ -46,13 +49,10 @@ class MistralFormatter(PromptFormatter):
         message: Optional[ModelMessage],
         use_metadata: bool,
         system_message: str,
-        tool_message: str,
     ) -> str:
         prompt_message_list: List[str] = []
         if system_message:
             prompt_message_list.append(system_message)
-        if tool_message:
-            prompt_message_list.append(tool_message)
 
         if message:
             prompt_message_list.append(message.get_message(use_metadata))

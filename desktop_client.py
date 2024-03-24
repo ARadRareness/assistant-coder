@@ -435,9 +435,14 @@ class AssistantCoder(QMainWindow):
         model_path = model_info["path"]
         print(model_path)
 
-        prompt = f"You are AC, the helpful AI coding assistant. You are currently running through the following model: {model_path}."
-        client_api.add_system_message(self.conversation_id, prompt)
-        print(prompt)
+        system_prompt = os.getenv(
+            "CLIENT_SYSTEM_PROMPT",
+            "You are AC, the helpful AI coding assistant. You are currently running through the following model: {model_path}.",
+        )
+        system_prompt = system_prompt.replace("{model_path}", model_path)
+
+        client_api.add_system_message(self.conversation_id, system_prompt)
+        print(system_prompt)
 
     def clear_chat(self):
         self.chat_display.clear()
