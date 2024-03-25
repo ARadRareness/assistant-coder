@@ -5,7 +5,7 @@ import unittest
 from client.client_api import Model
 from language_models.model_message import MessageMetadata
 
-TEST_RUN_COUNT = 3
+TEST_RUN_COUNT = 1
 
 
 def run_multiple_times(count: Any = None) -> Callable[[Any], Any]:

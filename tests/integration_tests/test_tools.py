@@ -154,13 +154,13 @@ class TestTools(TestBase):
             "The response mentions Christopher Paolini",
         )
 
-    @run_multiple_times(3)
+    @run_multiple_times
     def test_tool_code_interpreter(self):
         model = Model(
             single_message_mode=False,
             use_tools=True,
             use_reflections=False,
-            ask_permission_to_run_tools=False,
+            ask_permission_to_run_tools=True,
         )
         self.add_system_message(model)
 

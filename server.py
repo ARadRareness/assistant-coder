@@ -487,4 +487,4 @@ if __name__ == "__main__":
         # Increase the likelihood that the model manager is cleaned up properly
         atexit.register(model_manager.__del__)
 
-    app.run(debug=False, port=17173)
+    app.run(host="0.0.0.0", debug=False, port=17173)
