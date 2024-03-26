@@ -6,6 +6,7 @@ from language_models.api.base import ApiModel
 
 from language_models.api.llamacpp import LlamaCppModel
 from language_models.formatters.alpaca import AlpacaFormatter
+from language_models.formatters.cerebrum import CerebrumFormatter
 from language_models.formatters.deepseek_coder import DeepseekCoderFormatter
 from language_models.formatters.mistral import MistralFormatter
 from language_models.formatters.base import PromptFormatter
@@ -18,7 +19,6 @@ class ModelManager:
         self.llama_cpp_path = llama_cpp_path
         self.start_port = start_port
         self.popen = None
-        self.gpu_layers = 9001
         self.context_window = 2048
         self.active_models: List[ApiModel] = []
 
@@ -27,7 +27,7 @@ class ModelManager:
 
     def load_model(self, model_index: int = -1) -> None:
         if model_index == -1:
-            last_model_used = os.getenv("LAST_MODEL_USED", "")
+            last_model_used = os.getenv("MODEL.LAST_USED", "")
             available_models = self.get_available_models()
             try:
                 model_index = available_models.index(last_model_used)
@@ -49,24 +49,27 @@ class ModelManager:
         if model_identifier == "gpt-3.5-turbo":
             # Load the OpenAI model
             api_key = os.getenv(
-                "OPENAI_API_KEY"
+                "OPENAI.API_KEY"
             )  # Ensure you have set this environment variable
             if not api_key:
-                raise ValueError("OPENAI_API_KEY environment variable not set.")
+                raise ValueError("OPENAI.API_KEY environment variable not set.")
             openai_model = OpenAIModel(api_key=api_key, model_name="gpt-3.5-turbo")
             self.active_models.append(openai_model)
         else:
             # Load a local model
             model_path = os.path.join("models", model_identifier)
-            self.read_prompt_format(model_path)
+            print("PROMPT FORMAT:", self.read_prompt_format(model_path))
+
             print(self.llama_cpp_path)
+
+            gpu_layers = int(os.getenv("MODEL.GPU_LAYERS", 9001))
 
             # Start a new child process with the llama cpp path and the model path as arguments
             self.popen = subprocess.Popen(
                 [
                     self.llama_cpp_path,
                     "--n-gpu-layers",
-                    str(self.gpu_layers),
+                    str(gpu_layers),
                     "--ctx-size",
                     str(self.context_window),
                     "--port",
@@ -107,7 +110,7 @@ class ModelManager:
 
         dotenv_file = dotenv.find_dotenv()
         if dotenv_file:
-            dotenv.set_key(dotenv_file, "LAST_MODEL_USED", model_identifier)
+            dotenv.set_key(dotenv_file, "MODEL.LAST_USED", model_identifier)
 
     def read_prompt_format(self, model_path: str) -> str:
         from gguf import GGUFReader
@@ -133,6 +136,8 @@ class ModelManager:
             return DeepseekCoderFormatter()
         elif "alpaca" in model_path:
             return AlpacaFormatter()
+        elif "cerebrum" in model_path:
+            return CerebrumFormatter()
         else:
             return PromptFormatter()
 

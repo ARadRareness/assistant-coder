@@ -40,7 +40,7 @@ class OpenAIModel(ApiModel):
     ) -> ModelResponse:
 
         client = openai.OpenAI(
-            api_key=os.environ.get("OPENAI_API_KEY"),
+            api_key=os.environ.get("OPENAI.API_KEY"),
         )
 
         openai_messages: List[ChatCompletionMessageParam] = []

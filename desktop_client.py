@@ -111,10 +111,12 @@ class AssistantCoder(QMainWindow):
         self.suggestions_dialog = SuggestionsDialog(self.send_command)
 
         self.use_local_whisper = (
-            os.getenv("USE_LOCAL_WHISPER", "false").lower() == "true"
+            os.getenv("CLIENT.USE_LOCAL_WHISPER", "false").lower() == "true"
         )
 
-        self.use_local_tts = os.getenv("USE_LOCAL_TTS", "false").lower() == "true"
+        self.use_local_tts = (
+            os.getenv("CLIENT.USE_LOCAL_TTS", "false").lower() == "true"
+        )
 
         self.text_to_speech_engine: Optional[TextToSpeechEngine] = None
 
@@ -436,7 +438,7 @@ class AssistantCoder(QMainWindow):
         print(model_path)
 
         system_prompt = os.getenv(
-            "CLIENT_SYSTEM_PROMPT",
+            "CLIENT.SYSTEM_PROMPT",
             "You are AC, the helpful AI coding assistant. You are currently running through the following model: {model_path}.",
         )
         system_prompt = system_prompt.replace("{model_path}", model_path)
