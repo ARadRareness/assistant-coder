@@ -32,13 +32,7 @@ from PySide6.QtGui import (
     QGuiApplication,
 )
 
-from PySide6.QtCore import (
-    QObject,
-    QDir,
-    Qt,
-    Signal,
-    QSize,
-)
+from PySide6.QtCore import QObject, QDir, Qt, Signal, QSize, QMetaObject, Q_ARG, Slot
 
 from huggingface_hub import hf_hub_download  # type:ignore
 
@@ -120,6 +114,8 @@ class AssistantCoder(QMainWindow):
 
         self.text_to_speech_engine: Optional[TextToSpeechEngine] = None
 
+        self.single_record_audio_enabled = False
+
     def init_ui(self):
         self.create_window_and_system_menu()
 
@@ -160,6 +156,11 @@ class AssistantCoder(QMainWindow):
         self.chat_display.setReadOnly(True)
         chat_layout.addWidget(self.chat_display)
         self.init_command_entry(chat_layout)
+
+        # Add Record Audio button under the command text for one-time voice input
+        self.record_audio_button = QPushButton("Record Audio", self)
+        self.record_audio_button.clicked.connect(self.record_audio)
+        chat_layout.addWidget(self.record_audio_button)
 
         layout.addLayout(chat_layout)
 
@@ -339,29 +340,77 @@ class AssistantCoder(QMainWindow):
         self.suggestions_dialog.set_suggestions(suggestions)
         self.suggestions_dialog.show()
 
+    @Slot(bool)
     def toggle_voice_input(self, checked: bool):
+        if hasattr(self, "voice_input"):
+            del self.voice_input
+            self.voice_input_thread.join()
+
         if checked:
             self.voice_input = VoiceInput(use_local_whisper=self.use_local_whisper)
             self.voice_input_thread = threading.Thread(target=self.process_voice_input)
             self.voice_input_thread.start()
+
+            self.update_record_button_state(True)
         else:
-            del self.voice_input
-            self.voice_input_thread.join()
+            self.update_record_button_state(False)
+
+    def update_record_button_state(self, recording: bool):
+        if recording:
+            self.record_audio_button.setText("Listening...")
+            self.record_audio_button.setEnabled(False)
+        else:
+            self.record_audio_button.setText("Record Audio")
+            self.record_audio_button.setEnabled(True)
+
+    def record_audio(self):
+        self.single_record_audio_enabled = True
+        self.toggle_voice_input(checked=True)
 
     def process_voice_input(self):
         while hasattr(self, "voice_input"):
             try:
                 time.sleep(0.1)
-                message: Optional[str] = self.voice_input.get_input()
+                message: Optional[str] = None
+                # Safely check and get input from voice_input
+                if hasattr(self, "voice_input"):
+                    message = self.voice_input.get_input()
+
                 if message:
-                    if not self.use_local_whisper:
+                    # Use a thread-safe way to check and use self.use_local_whisper
+                    with threading.Lock():
+                        use_local_whisper = self.use_local_whisper
+
+                    if not use_local_whisper:
+                        # Ensure client_api.transcribe_audio is thread-safe or consider making it thread-safe
                         message = client_api.transcribe_audio(message)
 
                     if message:
-                        self.send_command(message)
+                        # Execute send_command in the main thread if it's not thread-safe
+                        QMetaObject.invokeMethod(
+                            self,
+                            "send_command",
+                            Qt.QueuedConnection,
+                            Q_ARG(str, message),
+                        )
+
+                        # Safely update and check self.single_record_audio_enabled
+                        with threading.Lock():
+                            if self.single_record_audio_enabled:
+                                self.single_record_audio_enabled = False
+                                # Ensure toggle_voice_input is safe to call from this thread or use signal-slot to call it in the main thread
+                                QMetaObject.invokeMethod(
+                                    self,
+                                    "toggle_voice_input",
+                                    Qt.QueuedConnection,
+                                    Q_ARG(bool, False),
+                                )
+                                break
             except queue.Empty:
                 continue
-            except:
+            except Exception as e:
+                # Log the exception or handle it as needed instead of silently breaking the loop
+                print(f"Error processing voice input: {e}")
                 break
 
     def cleanup_before_exit(self):
@@ -406,6 +455,7 @@ class AssistantCoder(QMainWindow):
     def focus_command_input(self) -> None:
         self.command.setFocus()
 
+    @Slot(str)
     def send_command(self, command: str) -> None:
         print("Sending command:", command)
         self.display_message("User: " + command, color="darkblue")
