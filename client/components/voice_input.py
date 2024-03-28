@@ -35,11 +35,15 @@ class VoiceInput:
     def __init__(self, use_local_whisper: bool = True):
         self.message_queue = queue.Queue[str]()
         self.quit_flag = ThreadSafeBoolean(False)
+        self.ignore_audio_flag = ThreadSafeBoolean(False)
         self.voice_input_thread = None
 
         if IMPORT_SUCCESS:
             self.voice_input_thread = VoiceInputThread(
-                self.message_queue, self.quit_flag, use_local_whisper=use_local_whisper
+                self.message_queue,
+                self.quit_flag,
+                self.ignore_audio_flag,
+                use_local_whisper=use_local_whisper,
             )
 
     def __del__(self):
@@ -52,12 +56,16 @@ class VoiceInput:
             return None
         return self.message_queue.get(block=False)
 
+    def set_ignore_audio(self, value: bool):
+        self.ignore_audio_flag.set(value)
+
 
 class VoiceInputThread(threading.Thread):
     def __init__(
         self,
         message_queue: queue.Queue[str],
         quit_flag: ThreadSafeBoolean,
+        ignore_audio_flag: ThreadSafeBoolean,
         language: str = "en",
         use_local_whisper: bool = True,
     ):
@@ -65,6 +73,7 @@ class VoiceInputThread(threading.Thread):
 
         self.message_queue: queue.Queue[str] = message_queue
         self.quit_flag: ThreadSafeBoolean = quit_flag
+        self.ignore_audio_flag: ThreadSafeBoolean = ignore_audio_flag
         self.language: str = language
         self.use_local_whisper = use_local_whisper
 
@@ -78,13 +87,17 @@ class VoiceInputThread(threading.Thread):
     def run(self):
         while not self.quit_flag.get():
             input_message = self.listen()
-            if input_message:
+            if input_message and not self.ignore_audio_flag.get():
                 self.message_queue.put(input_message)
 
     def listen(self):
         text = ""
         initial_whisper_prompt = "DEFAULT"
-        while (not text or text == initial_whisper_prompt) and not self.quit_flag.get():
+        while (
+            (not text or text == initial_whisper_prompt)
+            and not self.quit_flag.get()
+            and not self.ignore_audio_flag.get()
+        ):
             print("LISTENING")
             audio_data = self.capture_audio()
             print("AUDIO CAPTURED")
@@ -139,7 +152,7 @@ class VoiceInputThread(threading.Thread):
 
         has_speech = False
 
-        while not self.quit_flag.get():
+        while not self.quit_flag.get() and not self.ignore_audio_flag.get():
             # read a chunk of audio data from the stream
             data = stream.read(chunk)
 

@@ -112,6 +112,10 @@ class AssistantCoder(QMainWindow):
             os.getenv("CLIENT.USE_LOCAL_TTS", "false").lower() == "true"
         )
 
+        self.allow_voice_interrupt = (
+            os.getenv("CLIENT.VOICE_INTERRUPT", "false").lower() == "true"
+        )
+
         self.text_to_speech_engine: Optional[TextToSpeechEngine] = None
 
         self.single_record_audio_enabled = False
@@ -342,26 +346,40 @@ class AssistantCoder(QMainWindow):
 
     @Slot(bool)
     def toggle_voice_input(self, checked: bool):
-        if hasattr(self, "voice_input"):
-            del self.voice_input
-            self.voice_input_thread.join()
+        self.clear_voice_input()
 
         if checked:
             self.voice_input = VoiceInput(use_local_whisper=self.use_local_whisper)
             self.voice_input_thread = threading.Thread(target=self.process_voice_input)
             self.voice_input_thread.start()
 
-            self.update_record_button_state(True)
-        else:
-            self.update_record_button_state(False)
+            self.update_record_button_state_listening()
 
-    def update_record_button_state(self, recording: bool):
-        if recording:
-            self.record_audio_button.setText("Listening...")
-            self.record_audio_button.setEnabled(False)
         else:
-            self.record_audio_button.setText("Record Audio")
-            self.record_audio_button.setEnabled(True)
+            self.update_record_button_state_record_audio()
+
+    @Slot()
+    def clear_voice_input(self):
+        if hasattr(self, "voice_input"):
+            del self.voice_input
+            self.voice_input_thread.join()
+
+    @Slot()
+    def update_record_button_state_waiting(self):
+        self.record_audio_button.setText("Waiting...")
+        self.voice_input.set_ignore_audio(True)
+        self.record_audio_button.setEnabled(False)
+
+    @Slot()
+    def update_record_button_state_listening(self):
+        self.record_audio_button.setText("Listening...")
+        self.voice_input.set_ignore_audio(False)
+        self.record_audio_button.setEnabled(False)
+
+    @Slot()
+    def update_record_button_state_record_audio(self):
+        self.record_audio_button.setText("Record Audio")
+        self.record_audio_button.setEnabled(True)
 
     def record_audio(self):
         self.single_record_audio_enabled = True
@@ -374,7 +392,8 @@ class AssistantCoder(QMainWindow):
                 message: Optional[str] = None
                 # Safely check and get input from voice_input
                 if hasattr(self, "voice_input"):
-                    message = self.voice_input.get_input()
+                    with threading.Lock():
+                        message = self.voice_input.get_input()
 
                 if message:
                     # Use a thread-safe way to check and use self.use_local_whisper
@@ -386,26 +405,28 @@ class AssistantCoder(QMainWindow):
                         message = client_api.transcribe_audio(message)
 
                     if message:
-                        # Execute send_command in the main thread if it's not thread-safe
-                        QMetaObject.invokeMethod(
+                        QMetaObject.invokeMethod(  # type: ignore
                             self,
-                            "send_command",
-                            Qt.QueuedConnection,
+                            "send_command",  # type: ignore
+                            Qt.QueuedConnection,  # type: ignore
                             Q_ARG(str, message),
                         )
 
+                        use_tts = self.use_tts_action.isChecked()
+
+                        if use_tts and not self.allow_voice_interrupt:
+                            self.update_record_button_state_waiting()
+
                         # Safely update and check self.single_record_audio_enabled
-                        with threading.Lock():
-                            if self.single_record_audio_enabled:
-                                self.single_record_audio_enabled = False
-                                # Ensure toggle_voice_input is safe to call from this thread or use signal-slot to call it in the main thread
-                                QMetaObject.invokeMethod(
+                        if self.single_record_audio_enabled:
+                            with threading.Lock():
+                                QMetaObject.invokeMethod(  # type: ignore
                                     self,
-                                    "toggle_voice_input",
-                                    Qt.QueuedConnection,
-                                    Q_ARG(bool, False),
+                                    "clear_voice_input",  # type: ignore
+                                    Qt.QueuedConnection,  # type: ignore
                                 )
-                                break
+                                self.single_record_audio_enabled = False
+                            break
             except queue.Empty:
                 continue
             except Exception as e:
@@ -652,6 +673,7 @@ class MessageSender(QObject):
         use_safety = self._parent.use_safety_action.isChecked()
         use_clipboard = self._parent.use_clipboard_action.isChecked()
         use_tts = self._parent.use_tts_action.isChecked()
+        use_voice_input = self._parent.use_voice_input_action.isChecked()
 
         clipboard_content = QGuiApplication.clipboard().text() if use_clipboard else ""
 
@@ -699,6 +721,7 @@ class MessageSender(QObject):
                     self.message_received.emit("AC: " + response)
 
                     if use_tts:
+
                         if self._parent.use_local_tts:
                             if not self._parent.text_to_speech_engine:
                                 self._parent.text_to_speech_engine = (
@@ -717,6 +740,20 @@ class MessageSender(QObject):
                                     audio_stream = io.BytesIO(tts_response)
                                     audio = AudioSegment.from_file(audio_stream, format="wav")  # type: ignore
                                     play(audio)  # type: ignore
+
+                        if not self._parent.allow_voice_interrupt:
+                            if use_voice_input:
+                                QMetaObject.invokeMethod(  # type: ignore
+                                    self._parent,
+                                    "update_record_button_state_listening",  # type: ignore
+                                    Qt.QueuedConnection,  # type: ignore
+                                )
+                            else:
+                                QMetaObject.invokeMethod(  # type: ignore
+                                    self._parent,
+                                    "update_record_button_state_record_audio",  # type: ignore
+                                    Qt.QueuedConnection,  # type: ignore
+                                )
 
                     if suggestions:
                         self.suggestions_received.emit(suggestions)
