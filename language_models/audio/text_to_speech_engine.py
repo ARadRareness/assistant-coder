@@ -71,6 +71,8 @@ class TextToSpeechEngine:
             download("en_core_web_sm")
             nlp = spacy.load("en_core_web_sm")
 
+        text = self.filter_text(text)
+
         doc = nlp(text)
 
         sentences: List[str] = []
@@ -85,3 +87,8 @@ class TextToSpeechEngine:
 
         for sentence in sentences:
             yield self.text_to_speech(sentence)
+
+    def filter_text(self, text: str) -> str:
+        return "".join(
+            char if not (0x1F600 <= ord(char) <= 0x1F64F) else "," for char in text
+        )
