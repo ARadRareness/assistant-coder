@@ -1,0 +1,183 @@
+[
+    {
+        "instruction": "",
+        "input": "What's the title of this webpage? https://www.youtube.com/watch?v=hleHx2Uiqmo",
+        "output": "{\"tool\": \"browse_internet\", \"arguments\": {\"URL\": \"https://www.youtube.com/watch?v=hleHx2Uiqmo\"}}"
+    },
+    {
+        "instruction": "",
+        "input": "Check the latest news on bbc.com.",
+        "output": "{\"tool\": \"browse_internet\", \"arguments\": {\"URL\": \"https://www.bbc.com\"}}"
+    },
+    {
+        "instruction": "",
+        "input": "What is the current week according to https://www.epochconverter.com/weeknumbers?",
+        "output": "{\"tool\": \"browse_internet\", \"arguments\": {\"URL\": \"https://www.epochconverter.com/weeknumbers\"}}"
+    },
+    {
+        "instruction": "",
+        "input": "What is the microsoft stock value according to yahoo finance?",
+        "output": "{\"tool\": \"browse_internet\", \"arguments\": {\"URL\": \"https://finance.yahoo.com/quote/MSFT/\"}}"
+    },
+    {
+        "instruction": "",
+        "input": "Look up the plot of the movie Antitrust on imdb (https://www.imdb.com/title/tt0218817/).",
+        "output": "{\"tool\": \"browse_internet\", \"arguments\": {\"URL\": \"https://www.imdb.com/title/tt0218817/\"}}"
+    },
+    {
+        "instruction": "",
+        "input": "Write a hello world program in python.",
+        "output": "{\"tool\": \"code_interpreter\", \"arguments\": {}}"
+    },
+    {
+        "instruction": "",
+        "input": "Plot y = x^2.",
+        "output": "{\"tool\": \"code_interpreter\", \"arguments\": {}}"
+    },
+    {
+        "instruction": "",
+        "input": "Webscrape the content of this url: https://en.wikipedia.org/wiki/Web_scraping.",
+        "output": "{\"tool\": \"code_interpreter\", \"arguments\": {}}"
+    },
+    {
+        "instruction": "",
+        "input": "Create pong for me in pygame.",
+        "output": "{\"tool\": \"code_interpreter\", \"arguments\": {}}"
+    },
+    {
+        "instruction": "",
+        "input": "What is the 10th prime number?",
+        "output": "{\"tool\": \"code_interpreter\", \"arguments\": {}}"
+    },
+    {
+        "instruction": "",
+        "input": "What is the clock?",
+        "output": "{\"tool\": \"get_date_and_time\", \"arguments\": {}}"
+    },
+    {
+        "instruction": "",
+        "input": "What is the time right now?",
+        "output": "{\"tool\": \"get_date_and_time\", \"arguments\": {}}"
+    },
+    {
+        "instruction": "",
+        "input": "Tell me the current date and time.",
+        "output": "{\"tool\": \"get_date_and_time\", \"arguments\": {}}"
+    },
+    {
+        "instruction": "",
+        "input": "What is the current date?",
+        "output": "{\"tool\": \"get_date_and_time\", \"arguments\": {}}"
+    },
+    {
+        "instruction": "",
+        "input": "What day will it be tomorrow?",
+        "output": "{\"tool\": \"get_date_and_time\", \"arguments\": {}}"
+    },
+    {
+        "instruction": "",
+        "input": "What tools do you support?",
+        "output": "{\"tool\": \"get_available_tools\", \"arguments\": {}}"
+    },
+    {
+        "instruction": "",
+        "input": "What kind of tools can you use?",
+        "output": "{\"tool\": \"get_available_tools\", \"arguments\": {}}"
+    },
+    {
+        "instruction": "",
+        "input": "What functions do you support?",
+        "output": "{\"tool\": \"get_available_tools\", \"arguments\": {}}"
+    },
+    {
+        "instruction": "",
+        "input": "What functionality can you use?",
+        "output": "{\"tool\": \"get_available_tools\", \"arguments\": {}}"
+    },
+    {
+        "instruction": "",
+        "input": "Show me what tools that are available.",
+        "output": "{\"tool\": \"get_available_tools\", \"arguments\": {}}"
+    },
+    {
+        "instruction": "",
+        "input": "Say something funny!",
+        "output": "{\"tool\": \"nothing\", \"arguments\": {}}"
+    },
+    {
+        "instruction": "",
+        "input": "I like to move it, move it.",
+        "output": "{\"tool\": \"nothing\", \"arguments\": {}}"
+    },
+    {
+        "instruction": "",
+        "input": "What would you do?",
+        "output": "{\"tool\": \"nothing\", \"arguments\": {}}"
+    },
+    {
+        "instruction": "",
+        "input": "Can you tell me your opinion?",
+        "output": "{\"tool\": \"nothing\", \"arguments\": {}}"
+    },
+    {
+        "instruction": "",
+        "input": "That's really funny!",
+        "output": "{\"tool\": \"nothing\", \"arguments\": {}}"
+    },
+    {
+        "instruction": "",
+        "input": "What would you do?",
+        "output": "{\"tool\": \"nothing\", \"arguments\": {}}"
+    },
+    {
+        "instruction": "",
+        "input": "Read this file for me.",
+        "output": "{\"tool\": \"read_file\", \"arguments\": {\"FILEINDEX\": \"1\"}}"
+    },
+    {
+        "instruction": "",
+        "input": "Of the selected files, read the second one.",
+        "output": "{\"tool\": \"read_file\", \"arguments\": {\"FILEINDEX\": \"2\"}}"
+    },
+    {
+        "instruction": "",
+        "input": "Using the selected file, answer what the biggest number is.",
+        "output": "{\"tool\": \"read_file\", \"arguments\": {\"FILEINDEX\": \"1\"}}"
+    },
+    {
+        "instruction": "",
+        "input": "What is the meaning of life according to the selected file?",
+        "output": "{\"tool\": \"read_file\", \"arguments\": {\"FILEINDEX\": \"1\"}}"
+    },
+    {
+        "instruction": "",
+        "input": "Load the file and use it to answer the previous question.",
+        "output": "{\"tool\": \"read_file\", \"arguments\": {\"FILEINDEX\": \"1\"}}"
+    },
+    {
+        "instruction": "",
+        "input": "Forever and one is a song by...",
+        "output": "{\"tool\": \"search_the_web\", \"arguments\": {\"QUERY\": \"forever and one song\"}}"
+    },
+    {
+        "instruction": "",
+        "input": "What were some of the biggest events of last year?",
+        "output": "{\"tool\": \"search_the_web\", \"arguments\": {\"QUERY\": \"list of biggest events last year\"}}"
+    },
+    {
+        "instruction": "",
+        "input": "When was the first AI created?",
+        "output": "{\"tool\": \"search_the_web\", \"arguments\": {\"QUERY\": \"first AI created date\"}}"
+    },
+    {
+        "instruction": "",
+        "input": "What is the latest AI news?",
+        "output": "{\"tool\": \"search_the_web\", \"arguments\": {\"QUERY\": \"latest AI news\"}}"
+    },
+    {
+        "instruction": "",
+        "input": "What is the population count of USA?",
+        "output": "{\"tool\": \"search_the_web\", \"arguments\": {\"QUERY\": \"population USA\"}}"
+    }
+]
+

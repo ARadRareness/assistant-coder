@@ -163,6 +163,7 @@ _output.json
 changelog.txt
 FutureFeatures.txt
 bin
+model
 models
 .vscode
 knowledge_base
