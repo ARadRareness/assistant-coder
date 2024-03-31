@@ -167,12 +167,17 @@ class ModelConversation:
         messages: list[ModelMessage],
         use_metadata: bool = False,
     ) -> None:
-        output = self.tool_manager.retrieve_tool_output(
-            model, max_tokens, messages, use_metadata
-        )
 
-        if output and output != JSON_ERROR_MESSAGE:
-            messages[-1].get_metadata().set_tool_output(output)
+        try:
+            output = self.tool_manager.retrieve_tool_output(
+                model, max_tokens, messages, use_metadata
+            )
+
+            if output and output != JSON_ERROR_MESSAGE:
+                messages[-1].get_metadata().set_tool_output(output)
+
+        except Exception as e:
+            print(e)
 
     def handle_knowledge(self, model: ApiModel, message: ModelMessage) -> None:
         formatted_documents: List[str] = []

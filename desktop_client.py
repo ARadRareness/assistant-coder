@@ -412,9 +412,7 @@ class AssistantCoder(QMainWindow):
                             Q_ARG(str, message),
                         )
 
-                        use_tts = self.use_tts_action.isChecked()
-
-                        if use_tts and not self.allow_voice_interrupt:
+                        if not self.allow_voice_interrupt:
                             self.update_record_button_state_waiting()
 
                         # Safely update and check self.single_record_audio_enabled
@@ -741,19 +739,19 @@ class MessageSender(QObject):
                                     audio = AudioSegment.from_file(audio_stream, format="wav")  # type: ignore
                                     play(audio)  # type: ignore
 
-                        if not self._parent.allow_voice_interrupt:
-                            if use_voice_input:
-                                QMetaObject.invokeMethod(  # type: ignore
-                                    self._parent,
-                                    "update_record_button_state_listening",  # type: ignore
-                                    Qt.QueuedConnection,  # type: ignore
-                                )
-                            else:
-                                QMetaObject.invokeMethod(  # type: ignore
-                                    self._parent,
-                                    "update_record_button_state_record_audio",  # type: ignore
-                                    Qt.QueuedConnection,  # type: ignore
-                                )
+                    if not self._parent.allow_voice_interrupt:
+                        if use_voice_input:
+                            QMetaObject.invokeMethod(  # type: ignore
+                                self._parent,
+                                "update_record_button_state_listening",  # type: ignore
+                                Qt.QueuedConnection,  # type: ignore
+                            )
+                        else:
+                            QMetaObject.invokeMethod(  # type: ignore
+                                self._parent,
+                                "update_record_button_state_record_audio",  # type: ignore
+                                Qt.QueuedConnection,  # type: ignore
+                            )
 
                     if suggestions:
                         self.suggestions_received.emit(suggestions)

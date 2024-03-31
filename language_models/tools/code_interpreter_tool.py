@@ -3,6 +3,7 @@ import sys
 from typing import Any, Dict, List, Tuple
 from language_models.api.base import ApiModel
 from language_models.model_message import MessageMetadata, ModelMessage, Role
+from language_models.model_state import ModelState
 from language_models.tools.base_tool import BaseTool
 import tempfile
 import os
@@ -17,26 +18,12 @@ class CodeInterpreterTool(BaseTool):
             ask_permission_to_run=False,
         )
 
-    def action(
+    def run_code(
         self,
-        arguments: Dict[str, Any],
         model: ApiModel,
-        messages: List[ModelMessage],
+        coding_conversation: List[ModelMessage],
         metadata: MessageMetadata,
-    ) -> str:
-        coding_conversation = messages + [
-            ModelMessage(
-                Role.SYSTEM,
-                f"You are an expert at solving problems using Python.",
-                metadata,
-            ),
-            ModelMessage(
-                Role.USER,
-                f"Write python code to solve the problem described in the earlier conversation.",
-                metadata,
-            ),
-        ]
-
+    ):
         tries = 3
         for _ in range(tries):
             code_response = model.generate_text(
@@ -66,6 +53,55 @@ class CodeInterpreterTool(BaseTool):
                     )
             else:
                 return "Error executing code."
+        return None
+
+    def action(
+        self,
+        arguments: Dict[str, Any],
+        model: ApiModel,
+        messages: List[ModelMessage],
+        metadata: MessageMetadata,
+    ) -> str:
+        coding_conversation = messages + [
+            ModelMessage(
+                Role.SYSTEM,
+                f"You are an expert at solving problems using Python.",
+                metadata,
+            ),
+            ModelMessage(
+                Role.USER,
+                f"Write python code to solve the problem described in the earlier conversation.",
+                metadata,
+            ),
+        ]
+
+        code_generator_model = os.getenv("MODEL.CODE_GENERATOR")
+        try:
+            code_generator_gpu_layers = int(
+                os.getenv("MODEL.CODE_GENERATOR.GPU_LAYERS", "-1")
+            )
+        except:
+            code_generator_gpu_layers = -1
+
+        original_model = model
+
+        model_manager = ModelState.get_instance().get_model_manager()
+
+        if code_generator_model and model_manager:
+            model_manager.change_model(code_generator_model, code_generator_gpu_layers)
+            model = model_manager.active_models[0]
+
+        result = None
+        try:
+            result = self.run_code(model, coding_conversation, metadata)
+        except:
+            pass
+
+        if code_generator_model and model_manager:
+            model_manager.change_model(original_model.model_path)
+
+        if result:
+            return result
 
         return "No code to execute."
 

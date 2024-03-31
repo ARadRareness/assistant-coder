@@ -25,7 +25,7 @@ class ModelManager:
     def model_is_loaded(self) -> bool:
         return self.popen != None
 
-    def load_model(self, model_index: int = -1) -> None:
+    def load_model(self, model_index: int = -1, gpu_layers: int = -1) -> None:
         if model_index == -1:
             last_model_used = os.getenv("MODEL.LAST_USED", "")
             available_models = self.get_available_models()
@@ -62,7 +62,8 @@ class ModelManager:
 
             print(self.llama_cpp_path)
 
-            gpu_layers = int(os.getenv("MODEL.GPU_LAYERS", 9001))
+            if gpu_layers == -1:
+                gpu_layers = int(os.getenv("MODEL.GPU_LAYERS", 9001))
 
             # Start a new child process with the llama cpp path and the model path as arguments
             self.popen = subprocess.Popen(
@@ -86,10 +87,15 @@ class ModelManager:
 
             while True:
                 if self.popen.stdout:
-                    line = self.popen.stdout.readline()
-                    print(line, end="")
-                    if "llama_new_context_with_model: graph splits" in line:
+                    try:
+                        line = self.popen.stdout.readline()
+                        print(line, end="")
+                        if "llama_new_context_with_model: graph splits" in line:
+                            break
+                    except Exception as e:
+                        print(e)
                         break
+
                 else:
                     return
 
@@ -141,7 +147,7 @@ class ModelManager:
         else:
             return PromptFormatter()
 
-    def change_model(self, model_path: str) -> None:
+    def change_model(self, model_path: str, gpu_layers: int = -1) -> None:
         for model in self.active_models:
             if model.get_model_path() == model_path:
                 return
@@ -152,7 +158,7 @@ class ModelManager:
             print(f"Error: Model {model_path} not found.")
             return
 
-        self.load_model(model_index)
+        self.load_model(model_index, gpu_layers)
 
     def get_available_models(self) -> List[str]:
         models = list(filter(lambda f: f.endswith(".gguf"), os.listdir("models")))

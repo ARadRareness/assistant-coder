@@ -1,4 +1,5 @@
 import json
+import os
 from typing import Any, Dict, Optional, Sequence, Tuple, List
 from language_models.api.base import ApiModel
 from language_models.helpers.json_fixer import fix_json_errors
@@ -6,6 +7,7 @@ from language_models.helpers.json_parser import handle_json
 from language_models.helpers.tool_helper import load_available_tools
 from language_models.model_message import MessageMetadata, ModelMessage, Role
 from language_models.model_response import ModelResponse
+from language_models.model_state import ModelState
 from language_models.tools.base_tool import BaseTool
 
 
@@ -118,6 +120,25 @@ class ToolManager:
             print(f"Exception message: {str(e)}")
             return None, {}
 
+    def change_to_tool_model(self, model: ApiModel):
+
+        tool_selector_model = os.getenv("MODEL.TOOL_SELECTOR")
+
+        try:
+            tool_selector_gpu_layers = int(
+                os.getenv("MODEL.TOOL_SELECTOR.GPU_LAYERS", "-1")
+            )
+        except:
+            tool_selector_gpu_layers = -1
+
+        model_manager = ModelState.get_instance().get_model_manager()
+
+        if tool_selector_model and model_manager:
+            model_manager.change_model(tool_selector_model, tool_selector_gpu_layers)
+            model = model_manager.active_models[0]
+
+        return model, model_manager
+
     def retrieve_tool_output(
         self,
         model: ApiModel,
@@ -129,7 +150,9 @@ class ToolManager:
             tool_conversation = self.get_tool_conversation(messages[-1])
             metadata = messages[-1].get_metadata()
 
-            response = model.generate_text(
+            tool_model, model_manager = self.change_to_tool_model(model)
+
+            response = tool_model.generate_text(
                 tool_conversation, max_tokens=max_tokens, use_metadata=use_metadata
             )
 
@@ -148,6 +171,12 @@ class ToolManager:
                         if not tool.get_user_permission(permission_message):
                             print(f"User denied permission to run {tool.name}")
                             return ""
+                result = tool.action(command["arguments"], model, messages, metadata)
+            else:
+                result = ""
 
-                return tool.action(command["arguments"], model, messages, metadata)
+            if tool_model != model and model_manager:
+                model_manager.change_model(model.model_path)
+
+            return result
         return ""
