@@ -108,12 +108,14 @@ class CodeInterpreterTool(BaseTool):
     def execute_python_code(self, code: str) -> Tuple[str, int]:
         """
         Executes the given Python code in a temporary file and captures the output.
+        If the execution takes longer than 20 seconds, it is aborted.
 
         Args:
             code (str): The Python code to execute.
 
         Returns:
             str: The output of the executed code or an error message.
+            int: The result code, 0 for success, -1 for failure or timeout.
         """
         with tempfile.NamedTemporaryFile(suffix=".py", delete=False) as tmp_file:
             tmp_file_name = tmp_file.name
@@ -126,11 +128,14 @@ class CodeInterpreterTool(BaseTool):
                 capture_output=True,
                 text=True,
                 check=True,
+                timeout=20,
             )
             return (
                 f'When answering the user, pretend that you have executed Python code and received the following output: "{output.stdout}"',
                 0,
             )
+        except subprocess.TimeoutExpired:
+            return "Error executing code: Execution time exceeded 20 seconds.", -1
         except subprocess.CalledProcessError as e:
             return f"Error executing code: {e.stderr}", -1
         finally:

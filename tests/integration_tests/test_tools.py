@@ -2,7 +2,6 @@ import os
 import tempfile
 import unittest
 
-from client.client_api import Model
 from tests.integration_tests.test_base import (
     TestBase,
     run_multiple_times,
@@ -21,7 +20,9 @@ class TestTools(TestBase):
 
     @run_multiple_times
     def test_tool_get_date_and_time(self):
-        model = Model(single_message_mode=False, use_tools=True, use_reflections=False)
+        model = self.create_test_model(
+            single_message_mode=False, use_tools=True, use_reflections=False
+        )
         self.add_system_message(model)
 
         response = model.generate_response("What is the current time and date?")
@@ -33,7 +34,9 @@ class TestTools(TestBase):
 
     @run_multiple_times
     def test_tool_nothing(self):
-        model = Model(single_message_mode=False, use_tools=True, use_reflections=False)
+        model = self.create_test_model(
+            single_message_mode=False, use_tools=True, use_reflections=False
+        )
         self.add_system_message(model)
 
         response = model.generate_response("Hi, how are you?")
@@ -45,7 +48,9 @@ class TestTools(TestBase):
 
     @run_multiple_times
     def test_tool_read_file(self):
-        model = Model(single_message_mode=False, use_tools=True, use_reflections=False)
+        model = self.create_test_model(
+            single_message_mode=False, use_tools=True, use_reflections=False
+        )
         self.add_system_message(model)
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -68,7 +73,9 @@ class TestTools(TestBase):
 
     @run_multiple_times
     def test_tool_read_file_select_one(self):
-        model = Model(single_message_mode=False, use_tools=True, use_reflections=False)
+        model = self.create_test_model(
+            single_message_mode=False, use_tools=True, use_reflections=False
+        )
         self.add_system_message(model)
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -102,7 +109,9 @@ class TestTools(TestBase):
 
     @run_multiple_times
     def test_tool_read_file_summarization(self):
-        model = Model(single_message_mode=False, use_tools=True, use_reflections=False)
+        model = self.create_test_model(
+            single_message_mode=False, use_tools=True, use_reflections=False
+        )
         self.add_system_message(model)
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -130,7 +139,9 @@ class TestTools(TestBase):
 
     @run_multiple_times(1)
     def test_tool_browse_internet(self):
-        model = Model(single_message_mode=False, use_tools=True, use_reflections=False)
+        model = self.create_test_model(
+            single_message_mode=False, use_tools=True, use_reflections=False
+        )
         self.add_system_message(model)
 
         response = model.generate_response(
@@ -144,7 +155,9 @@ class TestTools(TestBase):
 
     @run_multiple_times(1)
     def test_tool_search_the_web(self):
-        model = Model(single_message_mode=False, use_tools=True, use_reflections=False)
+        model = self.create_test_model(
+            single_message_mode=False, use_tools=True, use_reflections=False
+        )
         self.add_system_message(model)
 
         response = model.generate_response("Who wrote the book Murtagh?")
@@ -156,7 +169,7 @@ class TestTools(TestBase):
 
     @run_multiple_times
     def test_tool_code_interpreter(self):
-        model = Model(
+        model = self.create_test_model(
             single_message_mode=False,
             use_tools=True,
             use_reflections=False,
@@ -172,7 +185,9 @@ class TestTools(TestBase):
 
     @run_multiple_times
     def test_list_available_tools(self):
-        model = Model(single_message_mode=False, use_tools=True, use_reflections=False)
+        model = self.create_test_model(
+            single_message_mode=False, use_tools=True, use_reflections=False
+        )
         self.add_system_message(model)
 
         response = model.generate_response("What tools are available?")

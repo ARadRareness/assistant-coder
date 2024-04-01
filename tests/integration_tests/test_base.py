@@ -1,11 +1,16 @@
 import datetime
+import os
 from typing import Any, Callable
 import unittest
+
+from dotenv import load_dotenv
 
 from client.client_api import Model
 from language_models.model_message import MessageMetadata
 
 TEST_RUN_COUNT = 1
+
+load_dotenv()
 
 
 def run_multiple_times(count: Any = None) -> Callable[[Any], Any]:
@@ -26,8 +31,30 @@ def run_multiple_times(count: Any = None) -> Callable[[Any], Any]:
 
 
 class TestBase(unittest.TestCase):
+    def create_test_model(
+        self,
+        single_message_mode: bool = False,
+        use_tools: bool = False,
+        use_reflections: bool = False,
+        ask_permission_to_run_tools: bool = False,
+        use_knowledge: bool = False,
+    ) -> Model:
+        test_model_name = os.environ.get("MODEL.TEST_MODEL", "")
+
+        model = Model(
+            single_message_mode=single_message_mode,
+            use_tools=use_tools,
+            use_reflections=use_reflections,
+            use_knowledge=use_knowledge,
+            ask_permission_to_run_tools=ask_permission_to_run_tools,
+        )
+
+        model.change_model(test_model_name)
+
+        return model
+
     def base_assert_response(self, response: str, criteria: str, expected: bool):
-        fact_checker = Model(single_message_mode=True)
+        fact_checker = self.create_test_model(single_message_mode=True)
         fact_checker.add_system_message(
             "You are a response checker, answer with YES if the response fulfills the criteria or NO if it does not. Only answer with YES or NO."
         )

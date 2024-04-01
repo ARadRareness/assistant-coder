@@ -6,7 +6,9 @@ class TestConversations(TestBase):
 
     @run_multiple_times
     def test_conversation_with_secret_code(self):
-        model = Model(single_message_mode=False, use_tools=False, use_reflections=False)
+        model = self.create_test_model(
+            single_message_mode=False, use_tools=False, use_reflections=False
+        )
         self.add_system_message(model)
 
         response = model.generate_response("Hi, how are you?")
@@ -37,7 +39,7 @@ class TestConversations(TestBase):
 
     @run_multiple_times
     def test_suggestions(self):
-        model = Model(
+        model = self.create_test_model(
             single_message_mode=False,
             use_tools=False,
             use_reflections=False,
@@ -64,7 +66,7 @@ class TestConversations(TestBase):
 
     @run_multiple_times
     def test_knowledge_retrieval(self):
-        model = Model(
+        model = self.create_test_model(
             single_message_mode=False,
             use_tools=False,
             use_reflections=False,
@@ -80,7 +82,7 @@ class TestConversations(TestBase):
 
     @run_multiple_times
     def test_secret_code_in_metadata(self):
-        model = Model(
+        model = self.create_test_model(
             single_message_mode=False,
             use_tools=False,
             use_reflections=False,
