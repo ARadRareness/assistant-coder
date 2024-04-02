@@ -1,3 +1,4 @@
+from typing import List
 from datasets import load_dataset
 
 from unsloth import FastLanguageModel
@@ -8,6 +9,8 @@ from language_models.formatters.mistral import MistralFormatter
 from language_models.model_message import MessageMetadata, ModelMessage, Role
 
 import datetime
+
+from language_models.tool_manager import ToolManager
 
 # https://colab.research.google.com/drive/1Dyauq4kTZoLewQ1cApceUQVNcnnNTzg_?usp=sharing#scrollTo=6bZsfBuZDeCL
 
@@ -58,18 +61,25 @@ def formatting_prompts_func(examples):
     formatter = MistralFormatter()
     for instruction, input, output in zip(instructions, inputs, outputs):
         # Must add EOS_TOKEN, otherwise your generation will go on forever!
-        messages = [
-            ModelMessage(
-                Role.USER,
-                input,
-                MessageMetadata(timestamp=datetime.datetime.now(), selected_files=[]),
-            ),
+
+        user_message = ModelMessage(
+            Role.USER,
+            input,
+            MessageMetadata(timestamp=datetime.datetime.now(), selected_files=[]),
+        )
+
+        tool_manager = ToolManager()
+
+        messages: List[ModelMessage] = list(
+            tool_manager.get_tool_conversation(user_message)
+        )
+        messages.append(
             ModelMessage(
                 Role.ASSISTANT,
                 output,
                 MessageMetadata(timestamp=datetime.datetime.now(), selected_files=[]),
-            ),
-        ]
+            )
+        )
         formatted_text = formatter.generate_prompt(messages)
 
         final_text = ""
@@ -132,4 +142,6 @@ model.save_pretrained_gguf("model", tokenizer, quantization_method="q5_k_m")
 
 # If the line above fails, then run
 # python3 llama.cpp/convert.py model
+# Build llama.cpp with
+# rm -rf build; cmake -S . -B build -DLLAMA_CUBLAS=ON && cmake --build build --config Release
 # llama.cpp/build/bin/quantize ./model/ggml-model-f32.gguf ./model/ggml-model-Q5_K_M.gguf Q5_K_M

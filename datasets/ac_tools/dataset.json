@@ -178,6 +178,16 @@
         "instruction": "",
         "input": "What is the population count of USA?",
         "output": "{\"tool\": \"search_the_web\", \"arguments\": {\"QUERY\": \"population USA\"}}"
+    },
+    {
+        "instruction": "",
+        "input": "Who wrote the book Lord of the Rings?",
+        "output": "{\"tool\": \"search_the_web\", \"arguments\": {\"QUERY\": \"Lord of the Rings author\"}}"
+    },
+    {
+        "instruction": "",
+        "input": "Who made Murblur?",
+        "output": "{\"tool\": \"search_the_web\", \"arguments\": {\"QUERY\": \"Murblur creator\"}}"
     }
 ]
 

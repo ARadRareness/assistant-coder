@@ -211,7 +211,10 @@ def get_available_models() -> Sequence[str]:
 
 
 def change_model(conversation_id: str, model_name: str):
-    payload = {"conversation_id": conversation_id, "model_name": model_name}
+    payload = {
+        "conversation_id": conversation_id,
+        "model_name": model_name,
+    }
     response = requests.post(f"{BASE_URL}/change_model", json=payload)
 
     if response.status_code != 200:

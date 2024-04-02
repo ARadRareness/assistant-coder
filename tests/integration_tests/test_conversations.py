@@ -1,4 +1,3 @@
-from client.client_api import Model
 from tests.integration_tests.test_base import TestBase, run_multiple_times
 
 
