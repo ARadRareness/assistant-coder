@@ -2,6 +2,7 @@ import subprocess
 import sys
 from typing import Any, Dict, List, Tuple
 from language_models.api.base import ApiModel
+from language_models.helpers.dangerous_code_detector import DangerousCodeDetector
 from language_models.model_message import MessageMetadata, ModelMessage, Role
 from language_models.model_state import ModelState
 from language_models.tools.base_tool import BaseTool
@@ -17,6 +18,7 @@ class CodeInterpreterTool(BaseTool):
             available_arguments=[],
             ask_permission_to_run=False,
         )
+        self.dangerous_code_detector = DangerousCodeDetector()
 
     def run_code(
         self,
@@ -38,11 +40,14 @@ class CodeInterpreterTool(BaseTool):
             print(("CODE", code))
 
             if code:
-                if (
-                    metadata.ask_permission_to_run_tools
-                    and not self.get_user_permission(self.get_permission_message(code))
-                ):
-                    return "User denied permission to run code_interpreter."
+                if self.dangerous_code_detector.detect_potentially_dangerous_code(code):
+                    if (
+                        metadata.ask_permission_to_run_tools
+                        and not self.get_user_permission(
+                            self.get_permission_message(code)
+                        )
+                    ):
+                        return "User denied permission to run code_interpreter."
 
                 result, result_code = self.execute_python_code(code)
                 if result_code == 0:
