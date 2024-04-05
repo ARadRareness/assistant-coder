@@ -53,7 +53,7 @@ import queue
 from client.components.voice_input import VoiceInput
 from language_models.audio.text_to_speech_engine import TextToSpeechEngine
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv, dotenv_values
 
 if not os.path.exists(".env"):
     shutil.copy(".env_defaults", ".env")
@@ -183,6 +183,35 @@ class AssistantCoder(QMainWindow):
         action.setChecked(checked_by_default)
         return action
 
+    def update_env_option(self, action_text: str, checked: bool):
+        # Map action text to .env key
+        env_keys = {
+            "Use chat mode": "CLIENT.TOGGLE_CHAT",
+            "Use tools": "CLIENT.TOGGLE_TOOLS",
+            "Use reflections": "CLIENT.TOGGLE_REFLECTIONS",
+            "Use suggestions": "CLIENT.TOGGLE_SUGGESTIONS",
+            "Use knowledge": "CLIENT.TOGGLE_KNOWLEDGE",
+            "Use safety": "CLIENT.TOGGLE_SAFETY",
+            "Use clipboard": "CLIENT.TOGGLE_CLIPBOARD",
+            "Use text to speech": "CLIENT.TOGGLE_TTS",
+            "Use voice input": "CLIENT.TOGGLE_VOICE_INPUT",
+        }
+        env_key = env_keys.get(action_text)
+        if env_key:
+            # Update the .env file
+            self.set_env_value(env_key, str(checked).lower())
+
+    @staticmethod
+    def set_env_value(key: str, value: str):
+        # Load the current .env file into memory
+        dotenv_path = os.path.join(os.getcwd(), ".env")
+        values = dotenv_values(dotenv_path)
+        values[key] = value
+        # Write the updated values back to the .env file
+        with open(dotenv_path, "w") as f:
+            for k, v in values.items():
+                f.write(f"{k}={v}\n")
+
     def add_menu_action(
         self,
         action_text: str,
@@ -213,39 +242,77 @@ class AssistantCoder(QMainWindow):
 
         # Create actions for boolean options in the Window menu
         self.chat_mode_action = self.add_checkable_menu_action(
-            "Use chat mode", window_menu, options_menu, checked_by_default=True
+            "Use chat mode",
+            window_menu,
+            options_menu,
+            checked_by_default=os.getenv("CLIENT.TOGGLE_CHAT", "true").lower()
+            == "true",
         )
         self.use_tools_action = self.add_checkable_menu_action(
-            "Use tools", window_menu, options_menu, checked_by_default=True
+            "Use tools",
+            window_menu,
+            options_menu,
+            checked_by_default=os.getenv("CLIENT.TOGGLE_TOOLS", "true").lower()
+            == "true",
         )
         self.use_reflections_action = self.add_checkable_menu_action(
-            "Use reflections", window_menu, options_menu, checked_by_default=False
+            "Use reflections",
+            window_menu,
+            options_menu,
+            checked_by_default=os.getenv("CLIENT.TOGGLE_REFLECTIONS", "false").lower()
+            == "true",
         )
         self.use_suggestions_action = self.add_checkable_menu_action(
-            "Use suggestions", window_menu, options_menu, checked_by_default=False
+            "Use suggestions",
+            window_menu,
+            options_menu,
+            checked_by_default=os.getenv("CLIENT.TOGGLE_SUGGESTIONS", "false").lower()
+            == "true",
         )
 
         self.use_knowledge_action = self.add_checkable_menu_action(
-            "Use knowledge", window_menu, options_menu, checked_by_default=False
+            "Use knowledge",
+            window_menu,
+            options_menu,
+            checked_by_default=os.getenv("CLIENT.TOGGLE_KNOWLEDGE", "false").lower()
+            == "true",
         )
 
         self.use_safety_action = self.add_checkable_menu_action(
-            "Use safety", window_menu, options_menu, checked_by_default=True
+            "Use safety",
+            window_menu,
+            options_menu,
+            checked_by_default=os.getenv("CLIENT.TOGGLE_SAFETY", "true").lower()
+            == "true",
         )
 
         self.use_clipboard_action = self.add_checkable_menu_action(
-            "Use clipboard", window_menu, options_menu, checked_by_default=False
+            "Use clipboard",
+            window_menu,
+            options_menu,
+            checked_by_default=os.getenv("CLIENT.TOGGLE_CLIPBOARD", "false").lower()
+            == "true",
         )
 
         self.use_tts_action = self.add_checkable_menu_action(
-            "Use text to speech", window_menu, options_menu, checked_by_default=False
+            "Use text to speech",
+            window_menu,
+            options_menu,
+            checked_by_default=os.getenv("CLIENT.TOGGLE_TTS", "false").lower()
+            == "true",
         )
 
         # Add "Use voice input" option below "Use text to speech"
         self.use_voice_input_action = self.add_checkable_menu_action(
-            "Use voice input", window_menu, options_menu, checked_by_default=False
+            "Use voice input",
+            window_menu,
+            options_menu,
+            checked_by_default=os.getenv("CLIENT.TOGGLE_VOICE_INPUT", "false").lower()
+            == "true",
         )
         self.use_voice_input_action.triggered.connect(self.toggle_voice_input)
+        if self.use_voice_input_action.isChecked():
+            self.toggle_voice_input(True)
 
         window_menu.addSeparator()
         options_menu.addSeparator()
@@ -271,6 +338,34 @@ class AssistantCoder(QMainWindow):
 
         # Add the options menu to the main menu
         self.menu.addMenu(options_menu)
+
+        self.chat_mode_action.triggered.connect(
+            lambda checked: self.update_env_option("Use chat mode", checked)
+        )
+        self.use_tools_action.triggered.connect(
+            lambda checked: self.update_env_option("Use tools", checked)
+        )
+        self.use_reflections_action.triggered.connect(
+            lambda checked: self.update_env_option("Use reflections", checked)
+        )
+        self.use_suggestions_action.triggered.connect(
+            lambda checked: self.update_env_option("Use suggestions", checked)
+        )
+        self.use_knowledge_action.triggered.connect(
+            lambda checked: self.update_env_option("Use knowledge", checked)
+        )
+        self.use_safety_action.triggered.connect(
+            lambda checked: self.update_env_option("Use safety", checked)
+        )
+        self.use_clipboard_action.triggered.connect(
+            lambda checked: self.update_env_option("Use clipboard", checked)
+        )
+        self.use_tts_action.triggered.connect(
+            lambda checked: self.update_env_option("Use text to speech", checked)
+        )
+        self.use_voice_input_action.triggered.connect(
+            lambda checked: self.update_env_option("Use voice input", checked)
+        )
 
         # Set the menu for the system tray icon
         self.tray_icon.setContextMenu(self.menu)
