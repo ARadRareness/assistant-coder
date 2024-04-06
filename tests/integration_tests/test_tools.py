@@ -197,6 +197,23 @@ class TestTools(TestBase):
             "The response contains a list of available tools",
         )
 
+    @run_multiple_times
+    def test_tools_can_reference_previous_messages(self):
+        model = self.create_test_model(
+            single_message_mode=False, use_tools=True, use_reflections=False
+        )
+        self.add_system_message(model)
+
+        response = model.generate_response("Memorize that X=50.")
+
+        response = model.generate_response(
+            "Use code interpreter to find out what the X'th prime number is."
+        )
+        self.assert_response_is_about(
+            response,
+            "The response contains the 50th prime number, which is 229",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

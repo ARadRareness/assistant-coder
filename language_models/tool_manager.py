@@ -10,6 +10,8 @@ from language_models.model_response import ModelResponse
 from language_models.model_state import ModelState
 from language_models.tools.base_tool import BaseTool
 
+SELF_CONTAINED_MODE = True
+
 
 class ToolManager:
     def __init__(self):
@@ -139,6 +141,31 @@ class ToolManager:
 
         return model, model_manager
 
+    def create_self_contained_query(
+        self,
+        model: ApiModel,
+        max_tokens: int,
+        messages: List[ModelMessage],
+        use_metadata: bool = False,
+    ) -> ModelMessage:
+        metadata = messages[-1].get_metadata()
+        self_referential_conversation = messages[::] + [
+            ModelMessage(
+                Role.USER,
+                "Rewrite the last message in a self-contained manner, for example by replacing 'run it' with 'run (what it is, based on the context of the conversation)'. Write your response as short as needed to convey the message of the user. Start your response with 'The user...'",
+                metadata,
+            )
+        ]
+
+        response = model.generate_text(
+            self_referential_conversation,
+            max_tokens=max_tokens,
+            use_metadata=use_metadata,
+        )
+
+        print("SELF_CONTAINED: " + response.get_text())
+        return ModelMessage(Role.USER, response.get_text(), metadata)
+
     def retrieve_tool_output(
         self,
         model: ApiModel,
@@ -147,8 +174,16 @@ class ToolManager:
         use_metadata: bool = False,
     ) -> str:
         if messages:
-            tool_conversation = self.get_tool_conversation(messages[-1])
             metadata = messages[-1].get_metadata()
+
+            query_message: ModelMessage = messages[-1]
+
+            if SELF_CONTAINED_MODE:
+                query_message: ModelMessage = self.create_self_contained_query(
+                    model, max_tokens, messages, use_metadata
+                )
+
+            tool_conversation = self.get_tool_conversation(query_message)
 
             tool_model, model_manager = self.change_to_tool_model(model)
 
