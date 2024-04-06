@@ -50,12 +50,15 @@ class MistralFormatter(PromptFormatter):
         use_metadata: bool,
         system_message: str,
     ) -> str:
-        prompt_message_list: List[str] = []
+
+        prompt_message = ""
+
         if system_message:
-            prompt_message_list.append(system_message)
+            prompt_message += f"<SYSTEM_MESSAGE>{system_message}</SYSTEM_MESSAGE>"
 
         if message:
-            prompt_message_list.append(message.get_message(use_metadata))
+            prompt_message += (
+                f"<USER_MESSAGE>{message.get_message(use_metadata)}</USER_MESSAGE>"
+            )
 
-        prompt_message = "\n".join(prompt_message_list)
         return f"[INST] {prompt_message} [/INST]"
