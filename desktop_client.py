@@ -802,6 +802,7 @@ class MessageSender(QObject):
                             max_tokens=1000,
                             ask_permission_to_run_tools=use_safety,
                             clipboard_content=clipboard_content,
+                            allowed_tools=None,
                         )
 
                     if not response and i == 0:

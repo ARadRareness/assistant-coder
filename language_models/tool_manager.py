@@ -17,12 +17,14 @@ class ToolManager:
     def __init__(self):
         self.tools: Sequence[BaseTool] = load_available_tools()
 
-    def get_tool_conversation(self, message: ModelMessage) -> Sequence[ModelMessage]:
+    def get_tool_conversation(
+        self, message: ModelMessage, tools: Sequence[BaseTool]
+    ) -> Sequence[ModelMessage]:
         content = "You are an expert at determining which tool is the best to use in order to solve the problem. Using the user message and the available tools, reply with what tool and arguments you want to use."
 
         content += "Available tools:\n"
 
-        for tool in self.tools:
+        for tool in tools:
             content += f"{tool.name} - {tool.description}\n"
             arguments = tool.get_available_arguments()
             if arguments:
@@ -39,16 +41,18 @@ class ToolManager:
 
         messages = [tool_system_message]
 
-        for tool in self.tools:
+        for tool in tools:
             for example_message in tool.get_example_messages():
                 messages.append(example_message)
 
         messages.append(message)
         return messages
 
-    def get_target_tool(self, command: Dict[str, str]) -> Optional[BaseTool]:
+    def get_target_tool(
+        self, command: Dict[str, str], tools: Sequence[BaseTool]
+    ) -> Optional[BaseTool]:
         target_tool: str = command["tool"].replace("\\", "")
-        for tool in self.tools:
+        for tool in tools:
             if target_tool == tool.name:
                 return tool
 
@@ -97,7 +101,11 @@ class ToolManager:
                 raise Exception(f"Failed to fix JSON: {handled_text}")
 
     def parse_tool(
-        self, model: ApiModel, response: ModelResponse, metadata: MessageMetadata
+        self,
+        model: ApiModel,
+        response: ModelResponse,
+        metadata: MessageMetadata,
+        tools: Sequence[BaseTool],
     ) -> Tuple[Optional[BaseTool], Dict[str, Any]]:
         response_text = response.get_text()
         try:
@@ -113,7 +121,7 @@ class ToolManager:
             if not isinstance(command["arguments"], dict):
                 command["arguments"] = {}
 
-            target_tool = self.get_target_tool(command)
+            target_tool = self.get_target_tool(command, tools)
 
             return target_tool, command
 
@@ -176,6 +184,19 @@ class ToolManager:
         if messages:
             metadata = messages[-1].get_metadata()
 
+            allowed_tools = metadata.allowed_tools
+
+            if allowed_tools is not None:
+                filtered_tools = [
+                    tool
+                    for tool in self.tools
+                    if tool.name in allowed_tools
+                    or tool.name == "nothing"
+                    or tool.name == "get_available_tools"
+                ]
+            else:
+                filtered_tools = self.tools
+
             query_message: ModelMessage = messages[-1]
 
             if SELF_CONTAINED_MODE:
@@ -183,7 +204,9 @@ class ToolManager:
                     model, max_tokens, messages, use_metadata
                 )
 
-            tool_conversation = self.get_tool_conversation(query_message)
+            tool_conversation = self.get_tool_conversation(
+                query_message, filtered_tools
+            )
 
             tool_model, model_manager = self.change_to_tool_model(model)
 
@@ -191,7 +214,7 @@ class ToolManager:
                 tool_conversation, max_tokens=max_tokens, use_metadata=use_metadata
             )
 
-            tool, command = self.parse_tool(model, response, metadata)
+            tool, command = self.parse_tool(model, response, metadata, filtered_tools)
 
             if tool:
                 if metadata.ask_permission_to_run_tools:

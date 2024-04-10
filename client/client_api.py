@@ -1,6 +1,6 @@
 import requests
 import struct
-from typing import Any, Dict, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 BASE_URL = (
     "http://127.0.0.1:17173"  # Change this URL according to your server configuration
@@ -51,6 +51,7 @@ class Model:
         max_tokens: int = 200,
         temperature: float = 0.2,
         clipboard_content: str = "",
+        allowed_tools: Optional[List[str]] = None,
     ) -> str:
         return generate_response(
             self.conversation_id,
@@ -64,6 +65,7 @@ class Model:
             use_knowledge=self.use_knowledge,
             ask_permission_to_run_tools=self.ask_permission_to_run_tools,
             clipboard_content=clipboard_content,
+            allowed_tools=allowed_tools,
         )
 
     def generate_response_with_suggestions(
@@ -73,6 +75,7 @@ class Model:
         max_tokens: int = 200,
         temperature: float = 0.2,
         clipboard_content: str = "",
+        allowed_tools: Optional[List[str]] = None,
     ) -> Tuple[str, Sequence[str]]:
 
         return generate_response_with_suggestions(
@@ -87,6 +90,7 @@ class Model:
             use_knowledge=self.use_knowledge,
             ask_permission_to_run_tools=self.ask_permission_to_run_tools,
             clipboard_content=clipboard_content,
+            allowed_tools=allowed_tools,
         )
 
 
@@ -267,6 +271,7 @@ def generate_response(
     use_knowledge: bool = False,
     ask_permission_to_run_tools: bool = False,
     clipboard_content: str = "",
+    allowed_tools: Optional[List[str]] = None,
 ) -> str:
     response = _base_generate_response(
         conversation_id,
@@ -281,6 +286,7 @@ def generate_response(
         use_knowledge=use_knowledge,
         ask_permission_to_run_tools=ask_permission_to_run_tools,
         clipboard_content=clipboard_content,
+        allowed_tools=allowed_tools,
     )
 
     if response:
@@ -352,6 +358,7 @@ def _base_generate_response(
     use_knowledge: bool = False,
     ask_permission_to_run_tools: bool = False,
     clipboard_content: str = "",
+    allowed_tools: Optional[List[str]] = None,
 ) -> Tuple[str, Sequence[str]]:
     payload = {
         "conversation_id": conversation_id,
@@ -366,6 +373,7 @@ def _base_generate_response(
         "use_knowledge": use_knowledge == True,
         "ask_permission_to_run_tools": ask_permission_to_run_tools == True,
         "clipboard_content": clipboard_content,
+        "allowed_tools": allowed_tools,
     }
 
     response = requests.post(f"{BASE_URL}/generate_response", json=payload)

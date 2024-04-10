@@ -85,7 +85,12 @@ class ModelConversation:
             )
 
         if use_tools and messages:
-            self.handle_tool_use(model, 200, messages, use_metadata=use_metadata)
+            self.handle_tool_use(
+                model,
+                200,
+                messages,
+                use_metadata=use_metadata,
+            )
 
             self.write_to_history("RESPONSE AFTER TOOLS", model, messages, use_metadata)
 
@@ -170,7 +175,10 @@ class ModelConversation:
 
         try:
             output = self.tool_manager.retrieve_tool_output(
-                model, max_tokens, messages, use_metadata
+                model,
+                max_tokens,
+                messages,
+                use_metadata,
             )
 
             if output and output != JSON_ERROR_MESSAGE:

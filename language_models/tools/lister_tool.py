@@ -25,8 +25,19 @@ class ListerTool(BaseTool):
         messages: List[ModelMessage],
         metadata: MessageMetadata,
     ) -> str:
+        allowed_tools = metadata.allowed_tools
+        if allowed_tools is not None:
+            filtered_tools = [
+                tool
+                for tool in self.tools
+                if tool.name in allowed_tools
+                or tool.name == "nothing"
+                or tool.name == "get_available_tools"
+            ]
+        else:
+            filtered_tools = self.tools
         return "The following tools are available:\n" + "\n".join(
-            [f"{tool.name} - {tool.description}" for tool in self.tools]
+            [f"{tool.name} - {tool.description}" for tool in filtered_tools]
         )
 
     def get_example_messages(self) -> List[ModelMessage]:

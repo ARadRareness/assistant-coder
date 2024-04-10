@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import List, Sequence
+from typing import List, Optional, Sequence
 
 
 class Role(Enum):
@@ -16,6 +16,7 @@ class MessageMetadata:
         selected_files: Sequence[str],
         ask_permission_to_run_tools: bool = False,
         clipboard_content: str = "",
+        allowed_tools: Optional[List[str]] = None,
     ):
         self.timestamp = timestamp
         self.selected_files = selected_files
@@ -24,6 +25,7 @@ class MessageMetadata:
         self.tool_output = ""
         self.knowledge_information = ""
         self.reflection_text = ""
+        self.allowed_tools = allowed_tools
 
     def set_knowledge_information(self, knowledge_information: str) -> None:
         self.knowledge_information = knowledge_information

@@ -23,6 +23,8 @@ from language_models.model_state import ModelState
 
 from dotenv import load_dotenv
 
+from language_models.tools.code_interpreter_tool import CodeInterpreterTool
+
 if not os.path.exists(".env"):
     shutil.copy(".env_defaults", ".env")
 
@@ -245,12 +247,17 @@ def generate_response() -> Response:
         use_knowledge = data.get("use_knowledge")
         ask_permission_to_run_tools = data.get("ask_permission_to_run_tools")
         clipboard_content = data.get("clipboard_content")
+        allowed_tools = data.get("allowed_tools", None)
 
         timestamp = datetime.datetime.now()
         selected_files = data.get("selected_files")
 
         metadata = MessageMetadata(
-            timestamp, selected_files, ask_permission_to_run_tools, clipboard_content
+            timestamp,
+            selected_files,
+            ask_permission_to_run_tools,
+            clipboard_content,
+            allowed_tools,
         )
 
         if not conversation_id or not user_message:
@@ -402,7 +409,9 @@ def code_interpreter() -> Response:
         if conversation_id not in conversations:
             raise ValueError(f"Conversation with id {conversation_id} not found.")
 
-        code_interpreter = ToolManager().get_target_tool({"tool": "code_interpreter"})
+        code_interpreter: Optional[CodeInterpreterTool] = ToolManager().get_target_tool(
+            {"tool": "code_interpreter"}
+        )
 
         response: str = ""
 
@@ -426,7 +435,7 @@ def code_interpreter() -> Response:
                     conversations[conversation_id].get_messages(),
                     metadata,
                 )
-                print(response)
+                print(response)  # type: ignore
 
         return jsonify({"result": True, "response": response})
     except Exception as e:
