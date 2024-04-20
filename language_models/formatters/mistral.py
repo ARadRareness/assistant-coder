@@ -19,7 +19,6 @@ class MistralFormatter(PromptFormatter):
 
         system_message = ""
         system_message_latest = ""
-        tool_message = ""
 
         for i, message in enumerate(messages):
             if message.is_user_message():
@@ -40,7 +39,7 @@ class MistralFormatter(PromptFormatter):
                 system_message = message.get_message(use_metadata)
                 system_message_latest = system_message
 
-        if system_message or tool_message:
+        if system_message:
             prompt.append(self._user_message(None, use_metadata, system_message))
         return prompt
 

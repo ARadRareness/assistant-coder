@@ -29,7 +29,7 @@ class TestCoding(unittest.TestCase):
 
         model.add_system_message(system_prompt)
 
-        response = model.generate_response(user_prompt, max_tokens=10000)
+        response = model.generate_response(user_prompt, max_tokens=1000)
 
         return response, model
 
@@ -48,8 +48,8 @@ class TestCoding(unittest.TestCase):
 
     def test_run_all(self):
         success_count = 0
-        tries = 20
-        retries = 10
+        tries = 10
+        retries = 0
         for i in range(0, 164):
             print(f"TEST {i}")
             prompt = ""
@@ -85,18 +85,19 @@ class TestCoding(unittest.TestCase):
         print("SUCCESS RATE:", success_count / 164)
 
     def test_blub(self):
-        self.test_coding_agent_with_retries(6, 1)
+        self.test_coding_agent_with_retries(1, 0)
 
     def test_coding_agent_with_retries(self, test_number: int, retries: int):
         model, prompt, test, entrypoint, code_to_execute, result, result_code = (
             self.test_coding_agent_base(test_number)
         )
+
         print("RUN 1:", result_code)
         for r in range(retries):
             if result_code == 0:
                 break
             else:
-                response = model.generate_response(result, max_tokens=10000)
+                response = model.generate_response(result, max_tokens=1000)
 
                 code = self._parse_code(response)
                 try:
@@ -137,6 +138,8 @@ class TestCoding(unittest.TestCase):
 
         code = self._parse_code(response)
 
+        # print("\nCODE:\n", code)
+
         try:
             self._detect_dangerous_code(prompt, code, test)
         except Exception as e:
@@ -146,6 +149,7 @@ class TestCoding(unittest.TestCase):
         code_to_execute = code + "\n" + test + "\n" + f"check({entrypoint})"
 
         # print("\nRUNNING THE FOLLOWING CODE:\n", code_to_execute)
+
         result, result_code = self.code_interpreter_tool.execute_python_code(
             code_to_execute
         )
@@ -153,7 +157,8 @@ class TestCoding(unittest.TestCase):
         return model, prompt, test, entrypoint, code_to_execute, result, result_code
 
     def test_coding_agent(self, test_number: int):
-        _, prompt, test, code_to_execute, _, _, result_code = (
+
+        _, prompt, test, _, code_to_execute, _, result_code = (
             self.test_coding_agent_base(test_number)
         )
         return prompt, test, code_to_execute, result_code

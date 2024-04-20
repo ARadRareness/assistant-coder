@@ -55,6 +55,9 @@ class LlamaCppModel(ApiModel):
 
         if response.status_code == 200:
             json_data = response.json()
-            return ModelResponse(json_data["content"].strip(), json_data["model"])
+            content = json_data["content"].strip()
+            if "<|eot_id|>" in content:  # Temporary fix for LLama-3
+                content = content.split("<|eot_id|>")[0]
+            return ModelResponse(content, json_data["model"])
 
         return ModelResponse("", "")

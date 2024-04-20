@@ -8,6 +8,7 @@ from language_models.api.llamacpp import LlamaCppModel
 from language_models.formatters.alpaca import AlpacaFormatter
 from language_models.formatters.cerebrum import CerebrumFormatter
 from language_models.formatters.deepseek_coder import DeepseekCoderFormatter
+from language_models.formatters.llama3 import Llama3Formatter
 from language_models.formatters.mistral import MistralFormatter
 from language_models.formatters.base import PromptFormatter
 from language_models.formatters.orca_hashes import OrcaHashesFormatter
@@ -144,6 +145,8 @@ class ModelManager:
             return AlpacaFormatter()
         elif "cerebrum" in model_path:
             return CerebrumFormatter()
+        elif "Llama-3" in model_path:
+            return Llama3Formatter()
         else:
             return PromptFormatter()
 
