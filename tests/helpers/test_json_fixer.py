@@ -34,3 +34,9 @@ class TestJsonFixer(unittest.TestCase):
         expected_fixed_json = '{"name": "John", "age": 30}'
         result = fix_json_errors_manually(invalid_json)
         self.assertEqual(result, expected_fixed_json)
+
+    def test_invalid_json_no_quotes(self):
+        invalid_json = '{name: "John", arguments: {"age": 30}}'
+        expected_fixed_json = '{"name": "John", "arguments": {"age": 30}}'
+        result = fix_json_errors_manually(invalid_json)
+        self.assertEqual(result, expected_fixed_json)

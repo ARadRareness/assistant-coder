@@ -18,17 +18,24 @@ def fix_json_errors(
 
 
 def fix_json_errors_manually(broken_json: str) -> str:
+    result, _ = fix_json_errors_manually_helper(broken_json, 0)
+    return result
+
+
+def fix_json_errors_manually_helper(broken_json: str, start_index: int) -> str:
     parsed_arguments: List[str] = []
 
     in_argument_name = False
     in_argument_value = False
     using_single_quotes = False
-    using_nonstring_value = False
+    using_nonstring = False
 
     argument_name = ""
     argument_value = ""
 
-    for c in broken_json:
+    i: int = start_index
+    while i < len(broken_json):
+        c = broken_json[i]
         if in_argument_name or in_argument_value:
             if (using_single_quotes and c == "'") or (
                 not using_single_quotes and c == '"'
@@ -42,11 +49,20 @@ def fix_json_errors_manually(broken_json: str) -> str:
                     parsed_arguments.append(f'"{argument_name}": "{argument_value}"')
                     argument_name = ""
                     argument_value = ""
-            elif using_nonstring_value and c in ",}":
-                in_argument_value = False
-                parsed_arguments.append(f'"{argument_name}": {argument_value}')
-                argument_name = ""
-                argument_value = ""
+            elif using_nonstring and c in ",}:":
+                using_nonstring = False
+                if in_argument_name:
+                    in_argument_name = False
+                    if not argument_name:
+                        argument_name = "NONE"
+                else:
+                    in_argument_value = False
+                    parsed_arguments.append(f'"{argument_name}": {argument_value}')
+                    argument_name = ""
+                    argument_value = ""
+
+                    if c == "}":
+                        break
 
             else:
                 if in_argument_name:
@@ -54,7 +70,15 @@ def fix_json_errors_manually(broken_json: str) -> str:
                 elif in_argument_value:
                     argument_value += c
         else:
-            if c == '"' or c == "'":
+            if (
+                c == "{" and argument_name
+            ):  # Only activate recursion if we have parsed an argument_name
+                result, i = fix_json_errors_manually_helper(broken_json, i)
+                parsed_arguments.append(f'"{argument_name}": {result}')
+                argument_name = ""
+                i -= 1
+
+            elif c == '"' or c == "'":
                 if not argument_name:
                     in_argument_name = True
                 else:
@@ -62,19 +86,24 @@ def fix_json_errors_manually(broken_json: str) -> str:
 
                 if c == "'":
                     using_single_quotes = True
-            elif c in "0123456789nft":  # number, null, true, false
-                using_nonstring_value = True
+            elif c in "0123456789nft" and argument_name:  # number, null, true, false
+                using_nonstring = True
                 in_argument_value = True
                 argument_value += c
+            elif c.isalpha():
+                using_nonstring = True
+                in_argument_name = True
+                argument_name += c
+        i += 1
 
     if argument_name and argument_value:
-        if using_nonstring_value:
+        if using_nonstring:
             parsed_arguments.append(f'"{argument_name}": {argument_value}')
         else:
             parsed_arguments.append(f'"{argument_name}": "{argument_value}"')
 
     fixed_json = "{" + ", ".join(parsed_arguments) + "}"
-    return fixed_json
+    return fixed_json, i
 
 
 def fix_json_errors_with_model(

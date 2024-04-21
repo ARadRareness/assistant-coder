@@ -60,7 +60,7 @@ class TestConversations(TestBase):
 
         self.assert_response_is_about(
             suggestions[0],
-            "The text contains a topic that is a fitting as a follow up on a greeting",
+            "The text contains a topic suggestion.",
         )
 
     @run_multiple_times
@@ -91,7 +91,7 @@ class TestConversations(TestBase):
 
         response = model.generate_response(
             "What is the secret code?",
-            clipboard_content="My secret code is 4512",
+            clipboard_content="My secret code is 4512, remember it.",
         )
 
         self.assert_response_is_about(

@@ -54,7 +54,10 @@ class ReadFileTool(BaseTool):
         self, arguments: Dict[str, Any], metadata: MessageMetadata
     ) -> str:
         if "FILEINDEX" in arguments:
-            file_index = int(arguments["FILEINDEX"])
+            if isinstance(arguments["FILEINDEX"], str):
+                file_index = int(arguments["FILEINDEX"].replace('"', ""))
+            else:
+                file_index = arguments["FILEINDEX"]
 
             if not metadata or 0 >= file_index > len(metadata.selected_files):
                 print("Invalid file index!")

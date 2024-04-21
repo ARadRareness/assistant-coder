@@ -307,6 +307,7 @@ def generate_response_with_suggestions(
     use_knowledge: bool = False,
     ask_permission_to_run_tools: bool = False,
     clipboard_content: str = "",
+    allowed_tools: Optional[List[str]] = None,
 ) -> Tuple[str, Sequence[str]]:
 
     response = _base_generate_response(
@@ -322,6 +323,7 @@ def generate_response_with_suggestions(
         use_knowledge=use_knowledge,
         ask_permission_to_run_tools=ask_permission_to_run_tools,
         clipboard_content=clipboard_content,
+        allowed_tools=allowed_tools,
     )
 
     return response
