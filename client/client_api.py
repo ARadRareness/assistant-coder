@@ -118,7 +118,14 @@ def execute_code(
 
 
 def start_conversation() -> str:
-    response = requests.get(f"{BASE_URL}/start_new_conversation")
+    import os
+
+    knowledge_base_path = os.getenv("CLIENT.KNOWLEDGE_BASE", "")
+
+    payload = {}
+    if knowledge_base_path:
+        payload["knowledge_base_path"] = knowledge_base_path
+    response = requests.post(f"{BASE_URL}/start_new_conversation", json=payload)
     if response.status_code == 200:
         data = response.json()
         return data["conversation_id"]

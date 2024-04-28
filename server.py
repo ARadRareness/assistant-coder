@@ -34,24 +34,27 @@ app = Flask(__name__)
 
 conversations: Dict[str, ModelConversation] = {}
 
-memory_manager: MemoryManager = MemoryManager()
-
 text_to_speech_engine: Optional[TextToSpeechEngine] = None
 
 # Global variable for WhisperModel
 whisper_model = None
 
 
-@app.route("/start_new_conversation", methods=["GET"])
+@app.route("/start_new_conversation", methods=["POST"])
 def start_conversation() -> Response:
-    conversation_id = str(uuid.uuid4())
+    data = request.get_json()
+    knowledge_base_path = data.get("knowledge_base_path", "knowledge_base")
+    conversation_id = data.get("conversation_id")
+    if not conversation_id:
+        conversation_id = str(uuid.uuid4())
+
     with ModelState.get_lock():
         active_model = ModelState.get_active_model()
         if not active_model:
             raise ValueError("No model is available right now.")
 
     conversations[conversation_id] = ModelConversation(
-        memory_manager, active_model.get_model_path()
+        MemoryManager(knowledge_base_path), active_model.get_model_path()
     )
     return jsonify({"conversation_id": conversation_id})
 
