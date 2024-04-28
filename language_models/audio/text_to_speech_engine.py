@@ -89,6 +89,10 @@ class TextToSpeechEngine:
             yield self.text_to_speech(sentence)
 
     def filter_text(self, text: str) -> str:
-        return "".join(
+        response = "".join(
             char if not (0x1F600 <= ord(char) <= 0x1F64F) else "," for char in text
         )
+
+        response = response.replace("*", " ")
+
+        return response

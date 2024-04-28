@@ -29,7 +29,7 @@ class TestCoding(unittest.TestCase):
 
         model.add_system_message(system_prompt)
 
-        response = model.generate_response(user_prompt, max_tokens=1000)
+        response = model.generate_response(user_prompt, max_tokens=10000)
 
         return response, model
 
@@ -48,8 +48,8 @@ class TestCoding(unittest.TestCase):
 
     def test_run_all(self):
         success_count = 0
-        tries = 10
-        retries = 0
+        tries = 3
+        retries = 5
         for i in range(0, 164):
             print(f"TEST {i}")
             prompt = ""
@@ -97,7 +97,9 @@ class TestCoding(unittest.TestCase):
             if result_code == 0:
                 break
             else:
-                response = model.generate_response(result, max_tokens=1000)
+                response = model.generate_response(
+                    result, max_tokens=1000
+                )  # Idea: add to result "\n\nMake sure to write out the full solution and not just the changes to the code."
 
                 code = self._parse_code(response)
                 try:
@@ -111,7 +113,7 @@ class TestCoding(unittest.TestCase):
                 result, result_code = self.code_interpreter_tool.execute_python_code(
                     code_to_execute
                 )
-                print(f"RUN {r+1}:", result_code)
+                print(f"RUN {r+2}:", result_code)
 
         return prompt, test, code_to_execute, result_code
 

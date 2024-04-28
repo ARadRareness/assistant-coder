@@ -121,7 +121,6 @@ class AssistantCoder(QMainWindow):
         self.single_record_audio_enabled = False
 
     def init_ui(self):
-        self.create_window_and_system_menu()
 
         central_widget = QFrame()
         # central_widget.setStyleSheet(
@@ -169,6 +168,8 @@ class AssistantCoder(QMainWindow):
         layout.addLayout(chat_layout)
 
         app.aboutToQuit.connect(self.cleanup_before_exit)
+
+        self.create_window_and_system_menu()
 
     def add_checkable_menu_action(
         self,

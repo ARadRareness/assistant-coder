@@ -171,12 +171,14 @@ class CodeInterpreterTool(BaseTool):
         Returns:
             str: The extracted Python code.
         """
-        # Looking for the start of the code block
-        start = message.find("```python")
-        if start != -1:
-            # Adjusting start to the actual beginning of the code
-            start += len("```python")
-            end = message.find("```", start)
-            if end != -1:
-                return message[start:end].strip()
+
+        for code_version in ("```python", "```Python", "```"):
+            # Looking for the start of the code block
+            start = message.find(code_version)
+            if start != -1:
+                # Adjusting start to the actual beginning of the code
+                start += len(code_version)
+                end = message.find("```", start)
+                if end != -1:
+                    return message[start:end].strip()
         return ""
