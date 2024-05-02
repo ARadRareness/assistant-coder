@@ -1,4 +1,5 @@
 import openai
+import logging
 
 from openai.types.chat.chat_completion_message_param import ChatCompletionMessageParam
 from openai.types.chat.chat_completion_system_message_param import (
@@ -19,6 +20,9 @@ from language_models.model_response import ModelResponse
 
 import os
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 class OpenAIModel(ApiModel):
     def __init__(
@@ -37,7 +41,11 @@ class OpenAIModel(ApiModel):
         max_tokens: int = 200,
         temperature: float = 0.2,
         use_metadata: bool = False,
+        response_prefix: str = "",
     ) -> ModelResponse:
+
+        if response_prefix:
+            logger.info("OpenAI does not support response prefix.")
 
         client = openai.OpenAI(
             api_key=os.environ.get("OPENAI.API_KEY"),
@@ -64,7 +72,7 @@ class OpenAIModel(ApiModel):
                     )
                 )
 
-        print(openai_messages)
+        logger.info(openai_messages)
 
         chat_completion = client.chat.completions.create(
             model=self.model_name,

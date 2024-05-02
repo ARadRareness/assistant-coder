@@ -72,6 +72,7 @@ class ModelConversation:
         use_reflections: bool = False,
         use_knowledge: bool = False,
         ask_permission_to_run_tools: bool = False,
+        response_prefix: str = "",
     ) -> str:
         messages = self.get_messages(single_message_mode)
 
@@ -101,7 +102,12 @@ class ModelConversation:
                 "RESPONSE AFTER KNOWLEDGE", model, messages, use_metadata
             )
 
-        response = model.generate_text(messages, max_tokens, use_metadata=use_metadata)
+        response = model.generate_text(
+            messages,
+            max_tokens,
+            use_metadata=use_metadata,
+            response_prefix=response_prefix,
+        )
 
         self.add_assistant_message(response.get_text(), metadata)
 

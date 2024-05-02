@@ -251,6 +251,7 @@ def generate_response() -> Response:
         ask_permission_to_run_tools = data.get("ask_permission_to_run_tools")
         clipboard_content = data.get("clipboard_content")
         allowed_tools = data.get("allowed_tools", None)
+        response_prefix = data.get("response_prefix", "")
 
         timestamp = datetime.datetime.now()
         selected_files = data.get("selected_files")
@@ -289,6 +290,7 @@ def generate_response() -> Response:
                 use_reflections=use_reflections,
                 use_knowledge=use_knowledge,
                 ask_permission_to_run_tools=ask_permission_to_run_tools,
+                response_prefix=response_prefix,
             )
 
             if use_suggestions:

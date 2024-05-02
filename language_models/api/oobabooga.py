@@ -27,10 +27,14 @@ class OobaboogaModel(ApiModel):
         max_tokens: int = 200,
         temperature: float = 0.2,
         use_metadata: bool = False,
+        response_prefix: str = "",
     ) -> ModelResponse:
         prompt = self.prompt_formatter.generate_prompt(
             messages, use_metadata=use_metadata
         )
+
+        if response_prefix:
+            prompt += response_prefix
 
         request: Dict[str, Any] = {
             "prompt": prompt,

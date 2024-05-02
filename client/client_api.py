@@ -52,6 +52,7 @@ class Model:
         temperature: float = 0.2,
         clipboard_content: str = "",
         allowed_tools: Optional[List[str]] = None,
+        response_prefix: str = "",
     ) -> str:
         return generate_response(
             self.conversation_id,
@@ -66,6 +67,7 @@ class Model:
             ask_permission_to_run_tools=self.ask_permission_to_run_tools,
             clipboard_content=clipboard_content,
             allowed_tools=allowed_tools,
+            response_prefix=response_prefix,
         )
 
     def generate_response_with_suggestions(
@@ -76,6 +78,7 @@ class Model:
         temperature: float = 0.2,
         clipboard_content: str = "",
         allowed_tools: Optional[List[str]] = None,
+        response_prefix: str = "",
     ) -> Tuple[str, Sequence[str]]:
 
         return generate_response_with_suggestions(
@@ -91,6 +94,7 @@ class Model:
             ask_permission_to_run_tools=self.ask_permission_to_run_tools,
             clipboard_content=clipboard_content,
             allowed_tools=allowed_tools,
+            response_prefix=response_prefix,
         )
 
 
@@ -279,6 +283,7 @@ def generate_response(
     ask_permission_to_run_tools: bool = False,
     clipboard_content: str = "",
     allowed_tools: Optional[List[str]] = None,
+    response_prefix: str = "",
 ) -> str:
     response = _base_generate_response(
         conversation_id,
@@ -294,6 +299,7 @@ def generate_response(
         ask_permission_to_run_tools=ask_permission_to_run_tools,
         clipboard_content=clipboard_content,
         allowed_tools=allowed_tools,
+        response_prefix=response_prefix,
     )
 
     if response:
@@ -315,6 +321,7 @@ def generate_response_with_suggestions(
     ask_permission_to_run_tools: bool = False,
     clipboard_content: str = "",
     allowed_tools: Optional[List[str]] = None,
+    response_prefix: str = "",
 ) -> Tuple[str, Sequence[str]]:
 
     response = _base_generate_response(
@@ -331,6 +338,7 @@ def generate_response_with_suggestions(
         ask_permission_to_run_tools=ask_permission_to_run_tools,
         clipboard_content=clipboard_content,
         allowed_tools=allowed_tools,
+        response_prefix=response_prefix,
     )
 
     return response
@@ -368,6 +376,7 @@ def _base_generate_response(
     ask_permission_to_run_tools: bool = False,
     clipboard_content: str = "",
     allowed_tools: Optional[List[str]] = None,
+    response_prefix: str = "",
 ) -> Tuple[str, Sequence[str]]:
     payload = {
         "conversation_id": conversation_id,
@@ -383,6 +392,7 @@ def _base_generate_response(
         "ask_permission_to_run_tools": ask_permission_to_run_tools == True,
         "clipboard_content": clipboard_content,
         "allowed_tools": allowed_tools,
+        "response_prefix": response_prefix,
     }
 
     response = requests.post(f"{BASE_URL}/generate_response", json=payload)
