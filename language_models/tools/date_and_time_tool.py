@@ -24,6 +24,8 @@ class DateAndTimeTool(BaseTool):
         return (
             "The current date and time is: "
             + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            + ". The day is "
+            + datetime.datetime.now().strftime("%A")
             + ". When answering questions about the current date or time, use this information, don't mention not being able to use the current time and/or date."
         )
 

@@ -96,11 +96,14 @@ class ModelConversation:
             self.write_to_history("RESPONSE AFTER TOOLS", model, messages, use_metadata)
 
         if use_knowledge and messages:
-            self.handle_knowledge(model, messages[-1])
+            try:
+                self.handle_knowledge(model, messages[-1])
 
-            self.write_to_history(
-                "RESPONSE AFTER KNOWLEDGE", model, messages, use_metadata
-            )
+                self.write_to_history(
+                    "RESPONSE AFTER KNOWLEDGE", model, messages, use_metadata
+                )
+            except Exception as e:
+                print(e)
 
         response = model.generate_text(
             messages,
